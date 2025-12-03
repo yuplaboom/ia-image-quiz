@@ -21,7 +21,7 @@ services:
       - DATABASE_URL=sqlite:///%kernel.project_dir%/var/data.db
       - CORS_ALLOW_ORIGIN=^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$$
       - SERVER_NAME=:80
-      - FRANKENPHP_CONFIG=worker ./public/index.php
+      # Worker mode disabled for easier development (enable in production)
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
