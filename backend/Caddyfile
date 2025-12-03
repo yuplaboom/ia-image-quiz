@@ -1,0 +1,94 @@
+{
+    # Enable FrankenPHP
+    frankenphp {
+        # Enable worker mode for better performance (optional)
+        # worker ./public/index.php
+    }
+
+    # HTTP/3 support
+    servers {
+        protocols h1 h2 h3
+    }
+}
+
+:80 {
+    # Set the root directory
+    root * /app/public
+
+    # Enable compression
+    encode zstd gzip
+
+    # Symfony front controller
+    php_server {
+        # Resolve .php files
+        resolve_root_symlink
+    }
+
+    # API Platform and Symfony routes
+    @symfony {
+        file {
+            try_files {path} /index.php
+        }
+    }
+
+    handle @symfony {
+        php {
+            # Environment variables
+            env APP_ENV dev
+            env APP_SECRET a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+        }
+    }
+
+    # Serve static files directly
+    @static {
+        file
+        path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.woff2
+    }
+    handle @static {
+        file_server
+    }
+
+    # Health check endpoint
+    handle /health {
+        respond "OK" 200
+    }
+
+    # Security headers
+    header {
+        # Enable HSTS
+        Strict-Transport-Security "max-age=31536000;"
+        # Prevent MIME sniffing
+        X-Content-Type-Options "nosniff"
+        # Enable XSS protection
+        X-Frame-Options "SAMEORIGIN"
+        # Remove server header
+        -Server
+    }
+
+    # CORS for API
+    @cors {
+        path /api/*
+    }
+    handle @cors {
+        header {
+            Access-Control-Allow-Origin "*"
+            Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+            Access-Control-Allow-Headers "*"
+            Access-Control-Max-Age "3600"
+        }
+
+        @options {
+            method OPTIONS
+        }
+        handle @options {
+            respond 204
+        }
+    }
+
+    # Logging
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+}

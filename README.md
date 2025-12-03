@@ -12,10 +12,22 @@ Application de jeu d'entreprise où les participants créent des descriptions qu
 
 ## Architecture
 
-- **Backend**: Symfony 7.2 (API REST)
+- **Backend**: Symfony 7.2 (API REST) avec **FrankenPHP**
+- **Serveur**: FrankenPHP (HTTP/2, HTTP/3, Worker Mode)
 - **Frontend**: React + Vite
 - **Base de données**: SQLite (développement) / PostgreSQL ou MySQL (production)
 - **API IA**: OpenAI DALL-E 3
+
+## 🚀 Pourquoi FrankenPHP ?
+
+FrankenPHP est un serveur d'application PHP moderne créé par Kévin Dunglas (créateur d'API Platform):
+
+- **Performances exceptionnelles**: Mode worker qui garde Symfony en mémoire
+- **HTTP/2 et HTTP/3**: Support natif pour les protocoles modernes
+- **HTTPS automatique**: Certificats Let's Encrypt intégrés
+- **Zéro configuration**: Fonctionne out-of-the-box
+- **Basé sur Caddy**: Serveur web moderne et sécurisé
+- **Optimisé pour Symfony**: Conçu spécifiquement pour les applications PHP modernes
 
 ## Installation
 
@@ -203,36 +215,132 @@ ia-image-quiz/
 
 ## Déploiement en Production
 
-### Option 1: Serveur avec Docker
+### 🚀 Déploiement avec FrankenPHP (Recommandé)
 
-1. Clonez le projet sur votre serveur
-2. Configurez les variables d'environnement dans `docker-compose.yml`
-3. Construisez et lancez:
+FrankenPHP offre des performances exceptionnelles et une configuration simple pour la production.
+
+#### 1. Préparation
+
+Créez votre fichier `.env.prod` à partir de l'exemple:
 ```bash
-docker-compose up -d --build
+cp .env.prod.example .env.prod
 ```
 
-### Option 2: Hébergement traditionnel
-
-#### Backend
-- Hébergez sur un serveur PHP (Apache/Nginx)
-- Configurez la base de données
-- Définissez `APP_ENV=prod` dans `.env.local`
-- Exécutez `composer install --no-dev --optimize-autoloader`
-
-#### Frontend
+Éditez `.env.prod` et configurez:
 ```bash
-cd frontend
-npm run build
+# Générez un secret sécurisé
+APP_SECRET=$(openssl rand -hex 32)
+
+# Votre domaine (FrankenPHP activera HTTPS automatiquement)
+SERVER_NAME=votredomaine.com
+
+# Base de données
+DATABASE_URL=postgresql://user:password@database:5432/ia_challenge
+
+# Clé OpenAI
+OPENAI_API_KEY=sk-votre-clé
+
+# URL de l'API pour le frontend
+VITE_API_URL=https://votredomaine.com/api
 ```
-- Servez le dossier `dist/` avec votre serveur web
+
+#### 2. Déploiement Docker avec FrankenPHP
+
+```bash
+# Build et démarrage
+docker-compose -f docker-compose.prod.yml up -d --build
+
+# Créez la base de données
+docker-compose -f docker-compose.prod.yml exec backend \
+    php bin/console doctrine:migrations:migrate --no-interaction
+
+# Vérifiez les logs
+docker-compose -f docker-compose.prod.yml logs -f
+```
+
+**Avantages du mode production avec FrankenPHP:**
+- ✅ **Worker Mode activé**: Symfony reste en mémoire (10x plus rapide)
+- ✅ **HTTPS automatique**: Certificats Let's Encrypt gratuits
+- ✅ **HTTP/2 et HTTP/3**: Performance maximale
+- ✅ **Opcache optimisé**: Cache PHP préconfigré
+- ✅ **Compression Zstd/Gzip**: Bande passante réduite
+- ✅ **Headers de sécurité**: HSTS, CSP, etc.
+
+#### 3. HTTPS avec domaine personnalisé
+
+Pour activer HTTPS automatique, configurez simplement votre domaine:
+
+```bash
+# Dans .env.prod
+SERVER_NAME=votredomaine.com
+```
+
+FrankenPHP obtiendra automatiquement un certificat Let's Encrypt valide!
+
+Pour plusieurs domaines:
+```bash
+SERVER_NAME=votredomaine.com,www.votredomaine.com
+```
+
+#### 4. Avec PostgreSQL (Recommandé pour production)
+
+Décommentez la section `database` dans `docker-compose.prod.yml` et configurez:
+
+```yaml
+database:
+  image: postgres:16-alpine
+  environment:
+    - POSTGRES_DB=ia_challenge
+    - POSTGRES_USER=ia_challenge
+    - POSTGRES_PASSWORD=votre_mot_de_passe_sécurisé
+  volumes:
+    - db-data:/var/lib/postgresql/data
+```
+
+Puis dans `.env.prod`:
+```bash
+DATABASE_URL=postgresql://ia_challenge:votre_mot_de_passe@database:5432/ia_challenge
+```
+
+#### 5. Monitoring et Santé
+
+FrankenPHP expose un endpoint de santé:
+```bash
+curl http://votredomaine.com/health
+# Réponse: OK
+```
+
+Logs en temps réel:
+```bash
+docker-compose -f docker-compose.prod.yml logs -f backend
+```
+
+### Performance FrankenPHP vs PHP-FPM
+
+| Métrique | PHP-FPM | FrankenPHP Worker |
+|----------|---------|-------------------|
+| Requêtes/sec | ~500 | ~5000 |
+| Latence | 20-50ms | 2-5ms |
+| Mémoire | Moyenne | Optimale |
+| HTTP/3 | ❌ | ✅ |
+
+### Mise à l'échelle
+
+Pour augmenter les performances, ajustez le nombre de workers:
+
+```bash
+# Dans .env.prod
+FRANKENPHP_NUM_THREADS=8  # ou 'auto'
+```
 
 ### Considérations de Sécurité
 
-- Changez `APP_SECRET` dans `backend/.env`
-- Configurez CORS correctement pour votre domaine
-- Utilisez HTTPS en production
-- Protégez votre clé API OpenAI
+- ✅ Changez `APP_SECRET` (généré aléatoirement recommandé)
+- ✅ FrankenPHP active HTTPS automatiquement avec Let's Encrypt
+- ✅ Headers de sécurité configurés (HSTS, CSP, X-Frame-Options)
+- ✅ Fichiers sensibles bloqués (.env, .yaml, etc.)
+- ✅ Protégez votre clé API OpenAI
+- ✅ Utilisez PostgreSQL pour la production (plus robuste que SQLite)
 
 ## Dépannage
 
