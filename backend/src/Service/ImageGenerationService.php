@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class ImageGenerationService
@@ -41,9 +42,8 @@ class ImageGenerationService
                     'Content-Type' => 'application/json',
                 ],
                 'json' => [
-                    'model' => 'dall-e-3',
                     'prompt' => $prompt,
-                    'n' => 1,
+                    'model' => 'gpt-image-1',
                     'size' => '1024x1024',
                 ],
             ]);
@@ -54,11 +54,11 @@ class ImageGenerationService
                 return $data['data'][0]['url'];
             }
 
-            throw new \Exception('No image URL in response');
-        } catch (\Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface $e) {
+        } catch (ClientExceptionInterface $e) {
             // Get detailed error message from OpenAI API
             try {
                 $errorData = json_decode($e->getResponse()->getContent(false), true);
+                dd($errorData);
                 $errorMessage = $errorData['error']['message'] ?? $e->getMessage();
                 error_log('OpenAI API error: ' . $errorMessage);
                 error_log('Prompt was: ' . $prompt);
