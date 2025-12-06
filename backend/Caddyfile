@@ -9,6 +9,9 @@
     servers {
         protocols h1 h2 h3
     }
+
+    # Order directive to ensure Mercure is handled before other routes
+    order mercure before php_server
 }
 
 :80 {
@@ -45,6 +48,13 @@
     # Health check endpoint
     handle /health {
         respond "OK" 200
+    }
+
+    # Mercure hub configuration
+    mercure {
+        # Transport URL (optional, defaults to bolt)
+        # Anonymous subscriptions (allows subscriptions without JWT)
+        anonymous
     }
 
     # Use php_server directive for Symfony/API Platform

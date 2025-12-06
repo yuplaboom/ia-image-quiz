@@ -172,7 +172,8 @@ class Participant
     public function getDescription(): string
     {
         return sprintf(
-            "A person with %s and %s, who is %s but also %s, working as a %s",
+            "Dans une ambiance de repas de Noël, j'aimerai en premier plan une personne qui se prénomme %s (mais ne pas afficher le prénom), avec 2 traits physiques : %s et %s, qui a comme défaut %s mais en qualité %s, et qui travaille comme %s",
+            $this->name,
             $this->physicalTrait1,
             $this->physicalTrait2,
             $this->flaw,

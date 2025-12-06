@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class ImageGenerationService
@@ -10,11 +11,12 @@ class ImageGenerationService
     private string $apiKey;
     private string $apiEndpoint;
 
-    public function __construct(HttpClientInterface $httpClient)
-    {
+    public function __construct(
+        HttpClientInterface                          $httpClient,
+        #[Autowire('%env(OPENAI_API_KEY)%')]  string $apiKey = ''
+    ) {
         $this->httpClient = $httpClient;
-        // These should be configured in .env
-        $this->apiKey = $_ENV['OPENAI_API_KEY'] ?? '';
+        $this->apiKey = $apiKey;
         $this->apiEndpoint = 'https://api.openai.com/v1/images/generations';
     }
 
@@ -53,6 +55,17 @@ class ImageGenerationService
             }
 
             throw new \Exception('No image URL in response');
+        } catch (\Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface $e) {
+            // Get detailed error message from OpenAI API
+            try {
+                $errorData = json_decode($e->getResponse()->getContent(false), true);
+                $errorMessage = $errorData['error']['message'] ?? $e->getMessage();
+                error_log('OpenAI API error: ' . $errorMessage);
+                error_log('Prompt was: ' . $prompt);
+            } catch (\Exception $ex) {
+                error_log('Image generation failed: ' . $e->getMessage());
+            }
+            return $this->getPlaceholderImage($prompt);
         } catch (\Exception $e) {
             // Log error and return placeholder
             error_log('Image generation failed: ' . $e->getMessage());

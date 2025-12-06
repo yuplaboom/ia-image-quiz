@@ -8,6 +8,7 @@ import {
   revealAnswer,
   getGameStatistics
 } from '../services/api';
+import { subscribeToGameSession } from '../services/mercure';
 
 function GameHost() {
   const { sessionId } = useParams();
@@ -22,8 +23,42 @@ function GameHost() {
 
   useEffect(() => {
     loadGameData();
-    const interval = setInterval(loadCurrentRound, 2000);
-    return () => clearInterval(interval);
+
+    // Subscribe to Mercure notifications
+    const eventSource = subscribeToGameSession(sessionId, {
+      onNewRound: (round) => {
+        console.log('New round started:', round);
+        loadCurrentRound();
+        setShowReveal(false);
+        setRevealData(null);
+      },
+      onRoundEnded: (roundId, results) => {
+        console.log('Round ended:', roundId, results);
+      },
+      onGameEnded: (results) => {
+        console.log('Game ended:', results);
+        setStatistics(results);
+        loadGameData();
+      },
+      onScoreUpdate: (participantId, score) => {
+        console.log('Score updated:', participantId, score);
+        // Refresh reveal data if showing
+        if (showReveal && currentRoundData?.currentRound) {
+          revealAnswer(currentRoundData.currentRound.id).then(response => {
+            setRevealData(response.data);
+          });
+        }
+      },
+      onAnswerSubmitted: (participantId) => {
+        console.log('Answer submitted by:', participantId);
+        // Optionally show a visual notification
+      }
+    });
+
+    return () => {
+      eventSource.close();
+      console.log('[Mercure] Unsubscribed from game session');
+    };
   }, [sessionId]);
 
   useEffect(() => {

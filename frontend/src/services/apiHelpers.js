@@ -13,8 +13,8 @@ export const parseApiCollection = (response) => {
   let data = response.data;
 
   // Handle API Platform hydra format
-  if (data['hydra:member']) {
-    data = data['hydra:member'];
+  if (data['member']) {
+    data = data['member'];
   }
 
   // Ensure we return an array

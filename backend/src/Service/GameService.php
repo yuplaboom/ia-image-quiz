@@ -20,7 +20,8 @@ class GameService
         private GameRoundRepository $gameRoundRepository,
         private ParticipantRepository $participantRepository,
         private AnswerRepository $answerRepository,
-        private ImageGenerationService $imageGenerationService
+        private ImageGenerationService $imageGenerationService,
+        private MercureNotificationService $mercureNotificationService
     ) {
     }
 
@@ -90,6 +91,20 @@ class GameService
 
         $this->entityManager->flush();
 
+        // Notify all participants that the game has started with the first round
+        if ($firstRound) {
+            $this->mercureNotificationService->notifyNewRound(
+                $gameSession->getId(),
+                [
+                    'id' => $firstRound->getId(),
+                    'imageUrl' => $firstRound->getImageUrl(),
+                    'roundOrder' => $firstRound->getRoundOrder(),
+                    'roundIndex' => 0,
+                    'totalRounds' => $gameSession->getRounds()->count(),
+                ]
+            );
+        }
+
         return $gameSession;
     }
 
@@ -116,6 +131,13 @@ class GameService
             $gameSession->setCompletedAt(new \DateTime());
             $gameSession->setCurrentRoundIndex(null);
             $this->entityManager->flush();
+
+            // Notify game ended
+            $this->mercureNotificationService->notifyGameEnded(
+                $gameSession->getId(),
+                $this->getGameStatistics($gameSession)
+            );
+
             return null;
         }
 
@@ -124,6 +146,33 @@ class GameService
         $nextRound->setStartedAt(new \DateTime());
 
         $this->entityManager->flush();
+
+        // Notify round ended (for the previous round)
+        if ($currentRound) {
+            $roundResults = [
+                'roundId' => $currentRound->getId(),
+                'correctAnswer' => $currentRound->getParticipant()->getName(),
+                'correctAnswersCount' => $currentRound->getCorrectAnswersCount(),
+                'totalAnswersCount' => $currentRound->getAnswers()->count(),
+            ];
+            $this->mercureNotificationService->notifyRoundEnded(
+                $gameSession->getId(),
+                $currentRound->getId(),
+                $roundResults
+            );
+        }
+
+        // Notify new round started
+        $this->mercureNotificationService->notifyNewRound(
+            $gameSession->getId(),
+            [
+                'id' => $nextRound->getId(),
+                'imageUrl' => $nextRound->getImageUrl(),
+                'roundOrder' => $nextRound->getRoundOrder(),
+                'roundIndex' => $nextIndex,
+                'totalRounds' => count($rounds),
+            ]
+        );
 
         return $nextRound;
     }
@@ -145,7 +194,51 @@ class GameService
 
         $this->answerRepository->save($answer, true);
 
+        // Notify answer submitted
+        $this->mercureNotificationService->notifyAnswerSubmitted(
+            $round->getGameSession()->getId(),
+            $round->getId(),
+            $answer->getId()
+        );
+
+        // Calculate and notify score update
+        $playerStats = $this->getPlayerScore($round->getGameSession(), $playerName);
+        $this->mercureNotificationService->notifyScoreUpdate(
+            $round->getGameSession()->getId(),
+            $answer->getId(),
+            [
+                'playerName' => $playerName,
+                'totalAnswers' => $playerStats['totalAnswers'],
+                'correctAnswers' => $playerStats['correctAnswers'],
+                'isCorrect' => $isCorrect,
+            ]
+        );
+
         return $answer;
+    }
+
+    /**
+     * Get score for a specific player
+     */
+    private function getPlayerScore(GameSession $gameSession, string $playerName): array
+    {
+        $stats = [
+            'totalAnswers' => 0,
+            'correctAnswers' => 0,
+        ];
+
+        foreach ($gameSession->getRounds() as $round) {
+            foreach ($round->getAnswers() as $answer) {
+                if ($answer->getPlayerName() === $playerName) {
+                    $stats['totalAnswers']++;
+                    if ($answer->isCorrect()) {
+                        $stats['correctAnswers']++;
+                    }
+                }
+            }
+        }
+
+        return $stats;
     }
 
     /**

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getGameSession, getCurrentRound, submitAnswer } from '../services/api';
+import { subscribeToGameSession } from '../services/mercure';
 
 function GamePlayer() {
   const { sessionId } = useParams();
@@ -16,8 +17,30 @@ function GamePlayer() {
 
   useEffect(() => {
     loadGameData();
-    const interval = setInterval(loadCurrentRound, 3000);
-    return () => clearInterval(interval);
+
+    // Subscribe to Mercure notifications for real-time updates
+    const eventSource = subscribeToGameSession(sessionId, {
+      onNewRound: (round) => {
+        console.log('New round started:', round);
+        // Reload game session to update status to 'in_progress'
+        loadGameData();
+        setHasSubmitted(false);
+        setGuess('');
+        setSuccess('');
+      },
+      onGameEnded: (results) => {
+        console.log('Game ended:', results);
+        loadGameData();
+      },
+      onRoundEnded: (roundId, results) => {
+        console.log('Round ended:', roundId, results);
+      }
+    });
+
+    return () => {
+      eventSource.close();
+      console.log('[Mercure] Unsubscribed from game session');
+    };
   }, [sessionId]);
 
   const loadGameData = async () => {
