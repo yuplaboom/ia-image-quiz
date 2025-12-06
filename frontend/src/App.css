@@ -1,6 +1,7 @@
 .App {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #1a1a1a;
 }
 
 .navbar {
@@ -222,4 +223,355 @@ tr:hover {
 .stat-card p {
   margin: 0;
   opacity: 0.9;
+}
+
+/* Display View Styles (Projector/Big Screen) */
+.display-view {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.display-header {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1.5rem 3rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.display-header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  color: #667eea;
+}
+
+.display-round-info {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+}
+
+.round-counter {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.timer-large {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #667eea;
+  font-variant-numeric: tabular-nums;
+}
+
+.display-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.display-loading,
+.display-error {
+  color: white;
+  font-size: 2.5rem;
+  text-align: center;
+}
+
+.display-waiting {
+  text-align: center;
+  color: white;
+}
+
+.display-waiting h2 {
+  font-size: 3.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.display-waiting p {
+  font-size: 2rem;
+  margin-bottom: 3rem;
+}
+
+.qr-info {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 3rem;
+  border-radius: 20px;
+  margin-top: 3rem;
+}
+
+.qr-info p {
+  color: #333;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.join-url {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #667eea;
+  font-family: monospace;
+}
+
+.display-image-round {
+  width: 100%;
+  max-width: 1400px;
+  text-align: center;
+}
+
+.display-image-container {
+  margin-bottom: 2rem;
+}
+
+.display-image {
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.display-question h2 {
+  color: white;
+  font-size: 3.5rem;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.display-reveal {
+  width: 100%;
+  max-width: 1600px;
+}
+
+.display-answer-section {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 3rem;
+  border-radius: 20px;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.correct-answer {
+  font-size: 3.5rem;
+  color: #27ae60;
+  margin: 0 0 2rem 0;
+}
+
+.display-participant-info {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.info-item {
+  text-align: left;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.info-label {
+  display: block;
+  font-weight: 600;
+  color: #667eea;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.info-value {
+  display: block;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.display-score-summary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 16px;
+  margin-top: 2rem;
+}
+
+.score-big {
+  font-size: 4rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.score-label {
+  font-size: 1.8rem;
+  opacity: 0.9;
+}
+
+.display-answers-list {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2rem;
+  border-radius: 20px;
+}
+
+.display-answers-list h3 {
+  font-size: 2.5rem;
+  margin: 0 0 1.5rem 0;
+  color: #333;
+  text-align: center;
+}
+
+.answers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.answer-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.answer-card.correct {
+  background: #d4edda;
+  border: 3px solid #27ae60;
+}
+
+.answer-card.incorrect {
+  background: #f8d7da;
+  border: 3px solid #e74c3c;
+}
+
+.answer-player {
+  font-weight: bold;
+  font-size: 1.3rem;
+  color: #333;
+}
+
+.answer-guess {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.answer-result {
+  font-size: 2rem;
+  text-align: right;
+}
+
+.display-final-results {
+  width: 100%;
+  max-width: 1400px;
+  text-align: center;
+  color: white;
+}
+
+.display-final-results h2 {
+  font-size: 4rem;
+  margin-bottom: 3rem;
+}
+
+.display-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.stat-big {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2rem;
+  border-radius: 16px;
+}
+
+.stat-value {
+  font-size: 4rem;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 1.5rem;
+  color: #666;
+}
+
+.display-leaderboard {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 3rem;
+  border-radius: 20px;
+}
+
+.display-leaderboard h3 {
+  font-size: 2.5rem;
+  margin: 0 0 2rem 0;
+  color: #333;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.leaderboard-item {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: center;
+  gap: 2rem;
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  background: #f8f9fa;
+  transition: transform 0.3s;
+}
+
+.leaderboard-item:hover {
+  transform: scale(1.02);
+}
+
+.leaderboard-item.rank-1 {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  color: white;
+  font-size: 1.1em;
+}
+
+.leaderboard-item.rank-2 {
+  background: linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 100%);
+  color: white;
+}
+
+.leaderboard-item.rank-3 {
+  background: linear-gradient(135deg, #CD7F32 0%, #B8733E 100%);
+  color: white;
+}
+
+.rank {
+  font-size: 2.5rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.player-name {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.player-score {
+  font-size: 1.8rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.player-percent {
+  font-size: 1.3rem;
+  opacity: 0.8;
+  margin-left: 0.5rem;
 }

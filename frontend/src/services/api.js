@@ -37,9 +37,23 @@ export const getGameStatistics = (sessionId) =>
   api.get(`/game/session/${sessionId}/statistics`);
 
 // Game Round
-export const submitAnswer = (roundId, playerName, guessedName) =>
-  api.post(`/game/round/${roundId}/answer`, { playerName, guessedName });
+export const submitAnswer = (roundId, playerId, guessedName) =>
+  api.post(`/game/round/${roundId}/answer`, { playerId, guessedName });
 export const revealAnswer = (roundId) =>
   api.get(`/game/round/${roundId}/reveal`);
+
+// Players
+export const getPlayers = () => api.get('/players');
+export const getPlayer = (id) => api.get(`/players/${id}`);
+export const createPlayer = (data) => api.post('/players', data);
+export const updatePlayer = (id, data) => api.put(`/players/${id}`, data);
+export const deletePlayer = (id) => api.delete(`/players/${id}`);
+
+// Teams
+export const getTeams = () => api.get('/teams');
+export const getTeam = (id) => api.get(`/teams/${id}`);
+export const createTeam = (data) => api.post('/teams', data);
+export const updateTeam = (id, data) => api.put(`/teams/${id}`, data);
+export const deleteTeam = (id) => api.delete(`/teams/${id}`);
 
 export default api;

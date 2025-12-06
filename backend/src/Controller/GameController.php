@@ -6,6 +6,7 @@ use App\Entity\GameSession;
 use App\Entity\GameRound;
 use App\Repository\GameSessionRepository;
 use App\Repository\GameRoundRepository;
+use App\Repository\PlayerRepository;
 use App\Service\GameService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -88,24 +89,25 @@ class GameController extends AbstractController
     }
 
     #[Route('/round/{id}/answer', name: 'submit_answer', methods: ['POST'])]
-    public function submitAnswer(GameRound $round, Request $request): JsonResponse
+    public function submitAnswer(GameRound $round, PlayerRepository $playerRepository, Request $request): JsonResponse
     {
         try {
             $data = json_decode($request->getContent(), true);
-            $playerName = $data['playerName'] ?? '';
+            $playerId = $data['playerId'] ?? '';
             $guessedName = $data['guessedName'] ?? '';
 
-            if (empty($playerName) || empty($guessedName)) {
+            if (empty($playerId) || empty($guessedName)) {
                 return $this->json(['error' => 'Player name and guessed name are required'], Response::HTTP_BAD_REQUEST);
             }
-
-            $answer = $this->gameService->submitAnswer($round, $playerName, $guessedName);
+            $player = $playerRepository->find($playerId);
+            $answer = $this->gameService->submitAnswer($round, $player, $guessedName);
 
             return $this->json([
                 'message' => 'Answer submitted successfully',
                 'answer' => [
                     'id' => $answer->getId(),
-                    'playerName' => $answer->getPlayerName(),
+                    'playerName' => $answer->getPlayer()->getName(),
+                    'playerId' => $answer->getPlayer()->getId(),
                     'guessedName' => $answer->getGuessedName(),
                     'isCorrect' => $answer->isCorrect(),
                     'submittedAt' => $answer->getSubmittedAt()->format('Y-m-d H:i:s'),
@@ -159,7 +161,7 @@ class GameController extends AbstractController
             ],
             'answers' => array_map(function($answer) {
                 return [
-                    'playerName' => $answer->getPlayerName(),
+                    'playerName' => $answer->getPlayer()->getName(),
                     'guessedName' => $answer->getGuessedName(),
                     'isCorrect' => $answer->isCorrect(),
                 ];

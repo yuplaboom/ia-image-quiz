@@ -4,6 +4,7 @@ import ParticipantManager from './components/ParticipantManager';
 import GameSetup from './components/GameSetup';
 import GameHost from './components/GameHost';
 import GamePlayer from './components/GamePlayer';
+import GameDisplay from './components/GameDisplay';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             <Route path="/" element={<ParticipantManager />} />
             <Route path="/setup" element={<GameSetup />} />
             <Route path="/host/:sessionId" element={<GameHost />} />
+            <Route path="/display/:sessionId" element={<GameDisplay />} />
             <Route path="/play/:sessionId" element={<GamePlayer />} />
             <Route path="/host" element={<div className="info-box">Veuillez créer une session de jeu dans la Configuration Jeu</div>} />
             <Route path="/play" element={<div className="info-box">Veuillez rejoindre une session de jeu active</div>} />

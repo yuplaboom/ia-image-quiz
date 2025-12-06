@@ -34,10 +34,10 @@ class Answer
     #[Groups(['answer:write'])]
     private ?GameRound $gameRound = null;
 
-    #[ORM\Column(length: 255)]
-    #[Assert\NotBlank]
-    #[Groups(['answer:read', 'answer:write', 'game_round:read'])]
-    private ?string $playerName = null;
+    #[ORM\ManyToOne(targetEntity: Player::class, inversedBy: 'answers')]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['answer:read', 'answer:write', 'player:read'])]
+    private ?Player $player = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
@@ -73,17 +73,6 @@ class Answer
         return $this;
     }
 
-    public function getPlayerName(): ?string
-    {
-        return $this->playerName;
-    }
-
-    public function setPlayerName(string $playerName): static
-    {
-        $this->playerName = $playerName;
-        return $this;
-    }
-
     public function getGuessedName(): ?string
     {
         return $this->guessedName;
@@ -115,5 +104,16 @@ class Answer
     {
         $this->submittedAt = $submittedAt;
         return $this;
+    }
+
+    public function setPlayer(?Player $player): Answer
+    {
+        $this->player = $player;
+        return $this;
+    }
+
+    public function getPlayer(): ?Player
+    {
+        return $this->player;
     }
 }

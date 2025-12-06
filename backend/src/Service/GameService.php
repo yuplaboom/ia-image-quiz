@@ -6,6 +6,7 @@ use App\Entity\Answer;
 use App\Entity\GameRound;
 use App\Entity\GameSession;
 use App\Entity\Participant;
+use App\Entity\Player;
 use App\Repository\GameRoundRepository;
 use App\Repository\GameSessionRepository;
 use App\Repository\ParticipantRepository;
@@ -180,11 +181,11 @@ class GameService
     /**
      * Submit an answer for the current round
      */
-    public function submitAnswer(GameRound $round, string $playerName, string $guessedName): Answer
+    public function submitAnswer(GameRound $round, Player $player, string $guessedName): Answer
     {
         $answer = new Answer();
         $answer->setGameRound($round);
-        $answer->setPlayerName($playerName);
+        $answer->setPlayer($player);
         $answer->setGuessedName($guessedName);
 
         // Check if the answer is correct (case-insensitive comparison)
@@ -202,12 +203,12 @@ class GameService
         );
 
         // Calculate and notify score update
-        $playerStats = $this->getPlayerScore($round->getGameSession(), $playerName);
+        $playerStats = $this->getPlayerScore($round->getGameSession(), $player);
         $this->mercureNotificationService->notifyScoreUpdate(
             $round->getGameSession()->getId(),
             $answer->getId(),
             [
-                'playerName' => $playerName,
+                'playerName' => $player->getName(),
                 'totalAnswers' => $playerStats['totalAnswers'],
                 'correctAnswers' => $playerStats['correctAnswers'],
                 'isCorrect' => $isCorrect,
@@ -220,7 +221,7 @@ class GameService
     /**
      * Get score for a specific player
      */
-    private function getPlayerScore(GameSession $gameSession, string $playerName): array
+    private function getPlayerScore(GameSession $gameSession, Player $player): array
     {
         $stats = [
             'totalAnswers' => 0,
@@ -229,7 +230,7 @@ class GameService
 
         foreach ($gameSession->getRounds() as $round) {
             foreach ($round->getAnswers() as $answer) {
-                if ($answer->getPlayerName() === $playerName) {
+                if ($answer->getPlayer() === $player) {
                     $stats['totalAnswers']++;
                     if ($answer->isCorrect()) {
                         $stats['correctAnswers']++;
@@ -266,7 +267,7 @@ class GameService
                     $stats['correctAnswers']++;
                 }
 
-                $playerName = $answer->getPlayerName();
+                $playerName = $answer->getPlayer()->getName();
                 if (!isset($stats['playerStats'][$playerName])) {
                     $stats['playerStats'][$playerName] = [
                         'totalAnswers' => 0,

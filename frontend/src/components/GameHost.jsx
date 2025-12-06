@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   getGameSession,
   startGame,
@@ -141,10 +142,11 @@ function GameHost() {
   if (!gameSession) return <div className="error">Jeu introuvable</div>;
 
   const playerUrl = `${window.location.origin}/play/${sessionId}`;
+  const displayUrl = `${window.location.origin}/display/${sessionId}`;
 
   return (
     <div>
-      <h2>{gameSession.name}</h2>
+      <h2>{gameSession.name} - Administration</h2>
 
       {error && <div className="error">{error}</div>}
 
@@ -155,17 +157,49 @@ function GameHost() {
           <p>Temps par image: {gameSession.timePerImageSeconds} secondes</p>
 
           <div style={{marginTop: '2rem'}}>
-            <h4>URL pour les joueurs:</h4>
+            <h4>URL pour l'affichage (rétroprojecteur):</h4>
             <input
               type="text"
-              value={playerUrl}
+              value={displayUrl}
               readOnly
-              style={{marginBottom: '1rem'}}
+              style={{marginBottom: '0.5rem'}}
               onClick={(e) => e.target.select()}
             />
-            <button onClick={() => navigator.clipboard.writeText(playerUrl)}>
-              Copier l'URL
+            <button onClick={() => {
+              navigator.clipboard.writeText(displayUrl);
+              window.open(displayUrl, '_blank');
+            }}>
+              Ouvrir l'affichage
             </button>
+          </div>
+
+          <div style={{marginTop: '1.5rem'}}>
+            <h4>URL pour les joueurs:</h4>
+            <div style={{display: 'flex', gap: '2rem', alignItems: 'center'}}>
+              <div style={{flex: 1}}>
+                <input
+                  type="text"
+                  value={playerUrl}
+                  readOnly
+                  style={{marginBottom: '0.5rem'}}
+                  onClick={(e) => e.target.select()}
+                />
+                <button onClick={() => navigator.clipboard.writeText(playerUrl)}>
+                  Copier l'URL
+                </button>
+              </div>
+              <div style={{textAlign: 'center'}}>
+                <QRCodeSVG
+                  value={playerUrl}
+                  size={150}
+                  level="H"
+                  includeMargin={true}
+                />
+                <p style={{fontSize: '0.9rem', color: '#666', margin: '0.5rem 0 0 0'}}>
+                  Scanner pour rejoindre
+                </p>
+              </div>
+            </div>
           </div>
 
           <button
