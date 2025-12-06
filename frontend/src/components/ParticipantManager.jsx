@@ -23,11 +23,22 @@ function ParticipantManager() {
     try {
       setLoading(true);
       const response = await getParticipants();
-      setParticipants(response.data['hydra:member'] || response.data);
+      console.log('API Response:', response.data); // Debug
+
+      // Handle API Platform response format
+      let data = response.data;
+      if (data && data['hydra:member']) {
+        data = data['hydra:member'];
+      }
+
+      // Ensure we have an array
+      const participantsArray = Array.isArray(data) ? data : [];
+      setParticipants(participantsArray);
       setError('');
     } catch (err) {
-      setError('Erreur lors du chargement des participants');
-      console.error(err);
+      setError('Erreur lors du chargement des participants: ' + (err.response?.data?.message || err.message));
+      console.error('Load participants error:', err);
+      setParticipants([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
