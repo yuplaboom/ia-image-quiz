@@ -2,7 +2,7 @@ FROM dunglas/frankenphp:1-php8.4-alpine
 
 # Install system dependencies and PHP extensions
 RUN install-php-extensions \
-    pdo_sqlite \
+    pdo_mysql \
     zip \
     opcache
 

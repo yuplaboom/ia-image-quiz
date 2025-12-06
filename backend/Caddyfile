@@ -18,37 +18,7 @@
     # Enable compression
     encode zstd gzip
 
-    # Symfony front controller
-    php_server {
-        # Resolve .php files
-        resolve_root_symlink
-    }
-
-    # API Platform and Symfony routes
-    @symfony {
-        file {
-            try_files {path} /index.php
-        }
-    }
-
-    handle @symfony {
-        php {
-            # Environment variables
-            env APP_ENV dev
-            env APP_SECRET a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
-        }
-    }
-
-    # Serve static files directly
-    @static {
-        file
-        path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.woff2
-    }
-    handle @static {
-        file_server
-    }
-
-    # Health check endpoint
+    # Health check endpoint (handled first, before PHP)
     handle /health {
         respond "OK" 200
     }
@@ -66,24 +36,33 @@
     }
 
     # CORS for API
-    @cors {
-        path /api/*
+    @cors_preflight {
+        method OPTIONS
     }
-    handle @cors {
+    handle @cors_preflight {
         header {
             Access-Control-Allow-Origin "*"
             Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
             Access-Control-Allow-Headers "*"
             Access-Control-Max-Age "3600"
         }
+        respond 204
+    }
 
-        @options {
-            method OPTIONS
-        }
-        handle @options {
-            respond 204
+    # CORS headers for all API requests
+    @api {
+        path /api/*
+    }
+    handle @api {
+        header {
+            Access-Control-Allow-Origin "*"
+            Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+            Access-Control-Allow-Headers "*"
         }
     }
+
+    # Use php_server directive for Symfony/API Platform
+    php_server
 
     # Logging
     log {
