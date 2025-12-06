@@ -16,10 +16,13 @@ export const parseApiCollection = (response) => {
 
   let data = response.data;
 
-  // Handle API Platform hydra format
+  // Handle API Platform formats (both with and without hydra: prefix)
   if (data['hydra:member']) {
     console.log('parseApiCollection - Found hydra:member:', data['hydra:member']);
     data = data['hydra:member'];
+  } else if (data['member']) {
+    console.log('parseApiCollection - Found member:', data['member']);
+    data = data['member'];
   }
 
   // Ensure we return an array
