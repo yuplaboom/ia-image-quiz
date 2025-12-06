@@ -41,13 +41,17 @@ function ParticipantManager() {
       if (editingId) {
         await updateParticipant(editingId, formData);
       } else {
-        await createParticipant(formData);
+        console.log('Creating participant:', formData);
+        const response = await createParticipant(formData);
+        console.log('Create response:', response);
       }
       resetForm();
-      loadParticipants();
+      console.log('Reloading participants...');
+      await loadParticipants();
+      console.log('Participants reloaded');
     } catch (err) {
-      setError('Erreur lors de la sauvegarde');
-      console.error(err);
+      setError('Erreur lors de la sauvegarde: ' + (err.response?.data?.message || err.message));
+      console.error('Save error:', err);
     }
   };
 

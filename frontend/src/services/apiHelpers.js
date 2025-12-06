@@ -6,7 +6,11 @@
  * @returns {Array} - Array of items from the response
  */
 export const parseApiCollection = (response) => {
+  console.log('parseApiCollection - Full response:', response);
+  console.log('parseApiCollection - Response data:', response?.data);
+
   if (!response || !response.data) {
+    console.log('parseApiCollection - No response or data, returning []');
     return [];
   }
 
@@ -14,11 +18,14 @@ export const parseApiCollection = (response) => {
 
   // Handle API Platform hydra format
   if (data['hydra:member']) {
+    console.log('parseApiCollection - Found hydra:member:', data['hydra:member']);
     data = data['hydra:member'];
   }
 
   // Ensure we return an array
-  return Array.isArray(data) ? data : [];
+  const result = Array.isArray(data) ? data : [];
+  console.log('parseApiCollection - Final result:', result);
+  return result;
 };
 
 /**

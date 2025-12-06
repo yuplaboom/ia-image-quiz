@@ -10,6 +10,44 @@ const api = axios.create({
   },
 });
 
+// Request interceptor for debugging
+api.interceptors.request.use(
+  (config) => {
+    console.log('🚀 API Request:', {
+      method: config.method?.toUpperCase(),
+      url: config.baseURL + config.url,
+      data: config.data,
+      headers: config.headers,
+    });
+    return config;
+  },
+  (error) => {
+    console.error('❌ Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for debugging
+api.interceptors.response.use(
+  (response) => {
+    console.log('✅ API Response:', {
+      url: response.config.url,
+      status: response.status,
+      data: response.data,
+    });
+    return response;
+  },
+  (error) => {
+    console.error('❌ Response Error:', {
+      url: error.config?.url,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
+    return Promise.reject(error);
+  }
+);
+
 // Participants
 export const getParticipants = () => api.get('/participants');
 export const getParticipant = (id) => api.get(`/participants/${id}`);
