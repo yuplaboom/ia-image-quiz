@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getParticipants, createParticipant, updateParticipant, deleteParticipant } from '../services/api';
+import { parseApiCollection, getApiErrorMessage } from '../services/apiHelpers';
 
 function ParticipantManager() {
   const [participants, setParticipants] = useState([]);
@@ -23,11 +24,12 @@ function ParticipantManager() {
     try {
       setLoading(true);
       const response = await getParticipants();
-      setParticipants(response.data['hydra:member'] || response.data);
+      setParticipants(parseApiCollection(response));
       setError('');
     } catch (err) {
-      setError('Erreur lors du chargement des participants');
-      console.error(err);
+      setError('Erreur lors du chargement: ' + getApiErrorMessage(err));
+      console.error('Load participants error:', err);
+      setParticipants([]);
     } finally {
       setLoading(false);
     }

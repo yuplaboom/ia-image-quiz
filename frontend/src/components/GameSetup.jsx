@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getParticipants, createGameSession, initializeGame } from '../services/api';
+import { parseApiCollection, getApiErrorMessage } from '../services/apiHelpers';
 
 function GameSetup() {
   const navigate = useNavigate();
@@ -20,11 +21,12 @@ function GameSetup() {
     try {
       setLoading(true);
       const response = await getParticipants();
-      setParticipants(response.data['hydra:member'] || response.data);
+      setParticipants(parseApiCollection(response));
       setError('');
     } catch (err) {
-      setError('Erreur lors du chargement des participants');
-      console.error(err);
+      setError('Erreur lors du chargement: ' + getApiErrorMessage(err));
+      console.error('Load participants error:', err);
+      setParticipants([]);
     } finally {
       setLoading(false);
     }
