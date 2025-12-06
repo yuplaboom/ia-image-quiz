@@ -18,47 +18,33 @@
     # Enable compression
     encode zstd gzip
 
-    # Health check endpoint (handled first, before PHP)
-    handle /health {
-        respond "OK" 200
-    }
-
-    # Security headers
+    # CORS headers (applied to all responses)
     header {
-        # Enable HSTS
+        # CORS
+        Access-Control-Allow-Origin "*"
+        Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type, Authorization, Accept, X-Requested-With"
+        Access-Control-Max-Age "3600"
+        Access-Control-Expose-Headers "Link"
+
+        # Security headers
         Strict-Transport-Security "max-age=31536000;"
-        # Prevent MIME sniffing
         X-Content-Type-Options "nosniff"
-        # Enable XSS protection
         X-Frame-Options "SAMEORIGIN"
-        # Remove server header
         -Server
     }
 
-    # CORS for API
-    @cors_preflight {
+    # Handle OPTIONS requests (CORS preflight)
+    @options {
         method OPTIONS
     }
-    handle @cors_preflight {
-        header {
-            Access-Control-Allow-Origin "*"
-            Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-            Access-Control-Allow-Headers "*"
-            Access-Control-Max-Age "3600"
-        }
+    handle @options {
         respond 204
     }
 
-    # CORS headers for all API requests
-    @api {
-        path /api/*
-    }
-    handle @api {
-        header {
-            Access-Control-Allow-Origin "*"
-            Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-            Access-Control-Allow-Headers "*"
-        }
+    # Health check endpoint
+    handle /health {
+        respond "OK" 200
     }
 
     # Use php_server directive for Symfony/API Platform
