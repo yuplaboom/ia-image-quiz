@@ -20,6 +20,7 @@ export const deleteParticipant = (id) => api.delete(`/participants/${id}`);
 // Game Sessions
 export const getGameSessions = () => api.get('/game_sessions');
 export const getGameSession = (id) => api.get(`/game_sessions/${id}`);
+export const getLatestGameSession = () => api.get('/game/session/latest');
 export const createGameSession = (data) => api.post('/game_sessions', data);
 export const updateGameSession = (id, data) => api.put(`/game_sessions/${id}`, data);
 export const deleteGameSession = (id) => api.delete(`/game_sessions/${id}`);
@@ -46,7 +47,11 @@ export const revealAnswer = (roundId) =>
 export const getPlayers = () => api.get('/players');
 export const getPlayer = (id) => api.get(`/players/${id}`);
 export const createPlayer = (data) => api.post('/players', data);
-export const updatePlayer = (id, data) => api.put(`/players/${id}`, data);
+export const updatePlayer = (id, data) => api.patch(`/players/${id}`, data, {
+  headers: {
+    'Content-Type': 'application/merge-patch+json'
+  }
+});
 export const deletePlayer = (id) => api.delete(`/players/${id}`);
 
 // Teams
@@ -55,5 +60,18 @@ export const getTeam = (id) => api.get(`/teams/${id}`);
 export const createTeam = (data) => api.post('/teams', data);
 export const updateTeam = (id, data) => api.put(`/teams/${id}`, data);
 export const deleteTeam = (id) => api.delete(`/teams/${id}`);
+
+// Questions
+export const getQuestions = () => api.get('/questions');
+export const getQuestion = (id) => api.get(`/questions/${id}`);
+export const createQuestion = (data) => api.post('/questions', data);
+export const updateQuestion = (id, data) => api.put(`/questions/${id}`, data);
+export const deleteQuestion = (id) => api.delete(`/questions/${id}`);
+
+// Images
+export const storeParticipantImage = (participantId, imageDataUrl) =>
+  api.post(`/images/participant/${participantId}/store`, { imageDataUrl });
+export const batchStoreImages = (images) =>
+  api.post('/images/batch-store', { images });
 
 export default api;

@@ -9,6 +9,8 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Repository\TeamRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -37,6 +39,14 @@ class Team
     #[Assert\NotBlank]
     #[Groups(['team:read', 'team:write'])]
     private ?string $name = null;
+
+    #[ORM\OneToMany(targetEntity: Player::class, mappedBy: 'team', cascade: ['remove'], orphanRemoval: true)]
+    private Collection $players;
+
+    public function __construct()
+    {
+        $this->players = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {

@@ -1,36 +1,67 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import './App.css';
 import ParticipantManager from './components/ParticipantManager';
+import QuestionManager from './components/QuestionManager';
 import GameSetup from './components/GameSetup';
 import GameHost from './components/GameHost';
 import GamePlayer from './components/GamePlayer';
 import GameDisplay from './components/GameDisplay';
+import CurrentGamePlayer from './components/CurrentGamePlayer';
+import CurrentGameDisplay from './components/CurrentGameDisplay';
+import AdminDashboard from './components/AdminDashboard';
+import TeamManager from './components/TeamManager';
+import PlayerManager from './components/PlayerManager';
+
+function Navigation() {
+  const location = useLocation();
+
+  // Hide navigation for player and display views
+  const hideNav = location.pathname.startsWith('/play') || location.pathname.startsWith('/display');
+
+  if (hideNav) return null;
+
+  return (
+    <nav className="navbar">
+      <div className="nav-container">
+        <h1>IA Challenge - Administration</h1>
+        <ul className="nav-links">
+          <li><Link to="/admin">Dashboard</Link></li>
+          <li><Link to="/admin/participants">Participants</Link></li>
+          <li><Link to="/admin/questions">Questions</Link></li>
+          <li><Link to="/admin/players">Joueurs</Link></li>
+          <li><Link to="/admin/teams">Équipes</Link></li>
+          <li><Link to="/admin/sessions/new">Nouvelle Session</Link></li>
+        </ul>
+      </div>
+    </nav>
+  );
+}
 
 function App() {
   return (
     <Router>
       <div className="App">
-        <nav className="navbar">
-          <div className="nav-container">
-            <h1>IA Challenge - Devinez l'image générée</h1>
-            <ul className="nav-links">
-              <li><Link to="/">Participants</Link></li>
-              <li><Link to="/setup">Configuration Jeu</Link></li>
-              <li><Link to="/host">Hôte</Link></li>
-              <li><Link to="/play">Jouer</Link></li>
-            </ul>
-          </div>
-        </nav>
+        <Navigation />
 
         <main className="container">
           <Routes>
-            <Route path="/" element={<ParticipantManager />} />
-            <Route path="/setup" element={<GameSetup />} />
-            <Route path="/host/:sessionId" element={<GameHost />} />
-            <Route path="/display/:sessionId" element={<GameDisplay />} />
+            {/* Admin Routes */}
+            <Route path="/" element={<AdminDashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/participants" element={<ParticipantManager />} />
+            <Route path="/admin/questions" element={<QuestionManager />} />
+            <Route path="/admin/players" element={<PlayerManager />} />
+            <Route path="/admin/teams" element={<TeamManager />} />
+            <Route path="/admin/sessions/new" element={<GameSetup />} />
+            <Route path="/admin/host/:sessionId" element={<GameHost />} />
+
+            {/* Player Routes (no navigation) */}
+            <Route path="/play" element={<CurrentGamePlayer />} />
             <Route path="/play/:sessionId" element={<GamePlayer />} />
-            <Route path="/host" element={<div className="info-box">Veuillez créer une session de jeu dans la Configuration Jeu</div>} />
-            <Route path="/play" element={<div className="info-box">Veuillez rejoindre une session de jeu active</div>} />
+
+            {/* Display Routes (no navigation) */}
+            <Route path="/display" element={<CurrentGameDisplay />} />
+            <Route path="/display/:sessionId" element={<GameDisplay />} />
           </Routes>
         </main>
       </div>

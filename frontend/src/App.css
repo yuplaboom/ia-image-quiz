@@ -575,3 +575,28 @@ tr:hover {
   opacity: 0.8;
   margin-left: 0.5rem;
 }
+
+/* Quiz Answer Buttons */
+.quiz-answer-button {
+  width: 100%;
+  font-size: 1.2rem;
+  padding: 1.5rem;
+  text-align: left;
+  background: #f8f9fa !important;
+  border: 2px solid #ddd !important;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #333 !important;
+  font-weight: 500;
+}
+
+.quiz-answer-button:hover {
+  background: #e9ecef !important;
+  border-color: #007bff !important;
+  color: #333 !important;
+}
+
+.quiz-answer-button:active {
+  transform: scale(0.98);
+}

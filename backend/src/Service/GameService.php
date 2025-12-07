@@ -10,6 +10,7 @@ use App\Entity\Player;
 use App\Repository\GameRoundRepository;
 use App\Repository\GameSessionRepository;
 use App\Repository\ParticipantRepository;
+use App\Repository\QuestionRepository;
 use App\Repository\AnswerRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -20,6 +21,7 @@ class GameService
         private GameSessionRepository $gameSessionRepository,
         private GameRoundRepository $gameRoundRepository,
         private ParticipantRepository $participantRepository,
+        private QuestionRepository $questionRepository,
         private AnswerRepository $answerRepository,
         private ImageGenerationService $imageGenerationService,
         private MercureNotificationService $mercureNotificationService
@@ -27,9 +29,23 @@ class GameService
     }
 
     /**
-     * Initialize a game session with all participants
+     * Initialize a game session (delegates to specific type)
      */
-    public function initializeGame(GameSession $gameSession, array $participantIds): GameSession
+    public function initializeGame(GameSession $gameSession, array $ids): GameSession
+    {
+        if ($gameSession->getGameType() === GameSession::TYPE_AI_IMAGE_GENERATION) {
+            return $this->initializeAIImageGame($gameSession, $ids);
+        } elseif ($gameSession->getGameType() === GameSession::TYPE_CLASSIC_QUIZ) {
+            return $this->initializeClassicQuiz($gameSession, $ids);
+        }
+
+        throw new \Exception('Unknown game type: ' . $gameSession->getGameType());
+    }
+
+    /**
+     * Initialize an AI image generation game with participants
+     */
+    private function initializeAIImageGame(GameSession $gameSession, array $participantIds): GameSession
     {
         $participants = $this->participantRepository->findBy(['id' => $participantIds]);
 
@@ -63,6 +79,50 @@ class GameService
         }
 
         $this->entityManager->flush();
+
+        // Notify globally that a new session has been created
+        $this->mercureNotificationService->notifyNewSession(
+            $gameSession->getId(),
+            $gameSession->getName()
+        );
+
+        return $gameSession;
+    }
+
+    /**
+     * Initialize a classic quiz game with questions
+     */
+    private function initializeClassicQuiz(GameSession $gameSession, array $questionIds): GameSession
+    {
+        $questions = $this->questionRepository->findBy(['id' => $questionIds]);
+
+        if (empty($questions)) {
+            throw new \Exception('No questions found');
+        }
+
+        // Shuffle questions for random order
+        shuffle($questions);
+
+        $order = 0;
+        foreach ($questions as $question) {
+            // Create a round for this question
+            $round = new GameRound();
+            $round->setGameSession($gameSession);
+            $round->setQuestion($question);
+            $round->setImageUrl($question->getImageUrl());
+            $round->setRoundOrder($order++);
+
+            $gameSession->addRound($round);
+            $this->entityManager->persist($round);
+        }
+
+        $this->entityManager->flush();
+
+        // Notify globally that a new session has been created
+        $this->mercureNotificationService->notifyNewSession(
+            $gameSession->getId(),
+            $gameSession->getName()
+        );
 
         return $gameSession;
     }
@@ -152,7 +212,7 @@ class GameService
         if ($currentRound) {
             $roundResults = [
                 'roundId' => $currentRound->getId(),
-                'correctAnswer' => $currentRound->getParticipant()->getName(),
+                'correctAnswer' => $this->getCorrectAnswer($currentRound),
                 'correctAnswersCount' => $currentRound->getCorrectAnswersCount(),
                 'totalAnswersCount' => $currentRound->getAnswers()->count(),
             ];
@@ -188,9 +248,9 @@ class GameService
         $answer->setPlayer($player);
         $answer->setGuessedName($guessedName);
 
-        // Check if the answer is correct (case-insensitive comparison)
-        $correctName = $round->getParticipant()->getName();
-        $isCorrect = strcasecmp(trim($guessedName), trim($correctName)) === 0;
+        // Check if the answer is correct based on game type
+        $correctAnswer = $this->getCorrectAnswer($round);
+        $isCorrect = strcasecmp(trim($guessedName), trim($correctAnswer)) === 0;
         $answer->setIsCorrect($isCorrect);
 
         $this->answerRepository->save($answer, true);
@@ -216,6 +276,20 @@ class GameService
         );
 
         return $answer;
+    }
+
+    /**
+     * Get the correct answer for a round based on game type
+     */
+    private function getCorrectAnswer(GameRound $round): string
+    {
+        if ($round->getParticipant()) {
+            return $round->getParticipant()->getName();
+        } elseif ($round->getQuestion()) {
+            return $round->getQuestion()->getCorrectAnswer();
+        }
+
+        throw new \Exception('Round has neither participant nor question');
     }
 
     /**
@@ -253,6 +327,7 @@ class GameService
             'totalAnswers' => 0,
             'correctAnswers' => 0,
             'playerStats' => [],
+            'teamStats' => [],
         ];
 
         foreach ($gameSession->getRounds() as $round) {
@@ -267,17 +342,42 @@ class GameService
                     $stats['correctAnswers']++;
                 }
 
-                $playerName = $answer->getPlayer()->getName();
+                $player = $answer->getPlayer();
+                $playerName = $player->getName();
+                $team = $player->getTeam();
+                $teamName = $team ? $team->getName() : 'Aucune équipe';
+
+                // Player stats
                 if (!isset($stats['playerStats'][$playerName])) {
                     $stats['playerStats'][$playerName] = [
                         'totalAnswers' => 0,
                         'correctAnswers' => 0,
+                        'teamName' => $teamName,
                     ];
                 }
 
                 $stats['playerStats'][$playerName]['totalAnswers']++;
                 if ($answer->isCorrect()) {
                     $stats['playerStats'][$playerName]['correctAnswers']++;
+                }
+
+                // Team stats
+                if (!isset($stats['teamStats'][$teamName])) {
+                    $stats['teamStats'][$teamName] = [
+                        'totalAnswers' => 0,
+                        'correctAnswers' => 0,
+                        'players' => [],
+                    ];
+                }
+
+                $stats['teamStats'][$teamName]['totalAnswers']++;
+                if ($answer->isCorrect()) {
+                    $stats['teamStats'][$teamName]['correctAnswers']++;
+                }
+
+                // Track unique players in team
+                if (!in_array($playerName, $stats['teamStats'][$teamName]['players'])) {
+                    $stats['teamStats'][$teamName]['players'][] = $playerName;
                 }
             }
         }

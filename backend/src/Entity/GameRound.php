@@ -32,11 +32,16 @@ class GameRound
     private ?GameSession $gameSession = null;
 
     #[ORM\ManyToOne(targetEntity: Participant::class)]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     #[Groups(['game_round:read', 'game_session:read'])]
     private ?Participant $participant = null;
 
-    #[ORM\Column(type: 'text')]
+    #[ORM\ManyToOne(targetEntity: Question::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['game_round:read', 'game_session:read'])]
+    private ?Question $question = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
     #[Groups(['game_round:read', 'game_session:read'])]
     private ?string $imageUrl = null;
 
@@ -85,6 +90,17 @@ class GameRound
     public function setParticipant(?Participant $participant): static
     {
         $this->participant = $participant;
+        return $this;
+    }
+
+    public function getQuestion(): ?Question
+    {
+        return $this->question;
+    }
+
+    public function setQuestion(?Question $question): static
+    {
+        $this->question = $question;
         return $this;
     }
 

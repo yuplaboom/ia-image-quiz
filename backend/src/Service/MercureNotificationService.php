@@ -120,4 +120,26 @@ class MercureNotificationService
 
         $this->hub->publish($update);
     }
+
+    /**
+     * Notify globally that a new session has been created
+     */
+    public function notifyNewSession(int $sessionId, string $sessionName): void
+    {
+        try {
+            $update = new Update(
+                topics: ["global/sessions"],
+                data: json_encode([
+                    'type' => 'new_session',
+                    'sessionId' => $sessionId,
+                    'sessionName' => $sessionName,
+                    'timestamp' => time()
+                ])
+            );
+
+            $this->hub->publish($update);
+        } catch (\Exception $e) {
+            error_log("Failed to publish new_session update: " . $e->getMessage());
+        }
+    }
 }

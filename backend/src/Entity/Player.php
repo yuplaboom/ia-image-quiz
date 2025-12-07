@@ -6,6 +6,7 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Repository\PlayerRepository;
@@ -20,6 +21,7 @@ use Symfony\Component\Validator\Constraints as Assert;
         new GetCollection(),
         new Post(),
         new Put(),
+        new Patch(),
         new Delete()
     ],
     normalizationContext: ['groups' => ['player:read']],
@@ -40,7 +42,7 @@ class Player
 
     #[ORM\ManyToOne(targetEntity: Team::class, inversedBy: 'players')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['player:write'])]
+    #[Groups(['player:read', 'player:write'])]
     private ?Team $team = null;
 
     public function setId(?int $id): Player

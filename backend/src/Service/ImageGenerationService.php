@@ -43,7 +43,7 @@ class ImageGenerationService
                 ],
                 'json' => [
                     'prompt' => $prompt,
-                    'model' => 'gpt-image-1',
+                    'model' => 'dall-e-3',
                     'size' => '1024x1024',
                 ],
             ]);
@@ -58,7 +58,6 @@ class ImageGenerationService
             // Get detailed error message from OpenAI API
             try {
                 $errorData = json_decode($e->getResponse()->getContent(false), true);
-                dd($errorData);
                 $errorMessage = $errorData['error']['message'] ?? $e->getMessage();
                 error_log('OpenAI API error: ' . $errorMessage);
                 error_log('Prompt was: ' . $prompt);

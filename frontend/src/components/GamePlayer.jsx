@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getGameSession, getCurrentRound, submitAnswer, getPlayer, createPlayer, getTeams, createTeam } from '../services/api';
-import { subscribeToGameSession } from '../services/mercure';
+import { subscribeToGameSession, subscribeToGlobalSessions } from '../services/mercure';
 import { getPlayerData, savePlayerData, hasPlayerData, clearPlayerData } from '../services/playerStorage';
 
 function GamePlayer() {
   const { sessionId } = useParams();
+  const navigate = useNavigate();
   const [gameSession, setGameSession] = useState(null);
   const [currentRoundData, setCurrentRoundData] = useState(null);
   const [player, setPlayer] = useState(null); // Player entity from backend
   const [playerName, setPlayerName] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState('');
+  const [teams, setTeams] = useState([]);
   const [guess, setGuess] = useState('');
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -19,6 +22,7 @@ function GamePlayer() {
 
   useEffect(() => {
     loadGameData();
+    loadTeams();
 
     // Subscribe to Mercure notifications for real-time updates
     const eventSource = subscribeToGameSession(sessionId, {
@@ -44,6 +48,24 @@ function GamePlayer() {
       console.log('[Mercure] Unsubscribed from game session');
     };
   }, [sessionId]);
+
+  // Subscribe to global sessions to detect new session creation
+  useEffect(() => {
+    console.log('[GamePlayer] Setting up global session listener');
+
+    const eventSource = subscribeToGlobalSessions({
+      onNewSession: (newSessionId, sessionName) => {
+        console.log('[GamePlayer] New session detected:', newSessionId, sessionName);
+        // Redirect to the new session
+        navigate(`/play/${newSessionId}`, { replace: true });
+      }
+    });
+
+    return () => {
+      console.log('[GamePlayer] Cleaning up global session listener');
+      eventSource.close();
+    };
+  }, [navigate]);
 
   const loadGameData = async () => {
     try {
@@ -79,6 +101,21 @@ function GamePlayer() {
     }
   };
 
+  const loadTeams = async () => {
+    try {
+      const response = await getTeams();
+      const teamsList = response.data.member || response.data['hydra:member'] || [];
+      setTeams(teamsList);
+
+      // Pre-select first team if available
+      if (teamsList.length > 0 && !selectedTeam) {
+        setSelectedTeam(teamsList[0].id.toString());
+      }
+    } catch (err) {
+      console.error('Error loading teams:', err);
+    }
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!playerName.trim()) return;
@@ -86,28 +123,23 @@ function GamePlayer() {
     try {
       setLoading(true);
 
-      // Check if a default team exists, if not create one
-      let teamId;
-      try {
-        const teamsResponse = await getTeams();
-        if (teamsResponse.data['hydra:member'] && teamsResponse.data['hydra:member'].length > 0) {
-          teamId = teamsResponse.data['hydra:member'][0].id;
-        } else {
-          // Create a default team
+      // Use selected team or create default if none selected
+      let teamId = selectedTeam;
+
+      if (!teamId) {
+        // No team selected, create a default team
+        try {
           const teamResponse = await createTeam({ name: 'Default Team' });
           teamId = teamResponse.data.id;
+        } catch (err) {
+          console.error('Error creating default team:', err);
         }
-      } catch (err) {
-        console.error('Error with teams:', err);
-        // Create a default team
-        const teamResponse = await createTeam({ name: 'Default Team' });
-        teamId = teamResponse.data.id;
       }
 
       // Create new player
       const playerResponse = await createPlayer({
         name: playerName.trim(),
-        team: `/api/teams/${teamId}`
+        team: teamId ? `/api/teams/${teamId}` : null
       });
 
       const newPlayer = playerResponse.data;
@@ -199,6 +231,20 @@ function GamePlayer() {
             />
           </div>
 
+          <div className="form-group">
+            <label>Votre Équipe</label>
+            <select
+              value={selectedTeam}
+              onChange={(e) => setSelectedTeam(e.target.value)}
+              required={teams.length > 0}
+            >
+              {teams.length === 0 && <option value="">Aucune équipe disponible</option>}
+              {teams.map(team => (
+                <option key={team.id} value={team.id}>{team.name}</option>
+              ))}
+            </select>
+          </div>
+
           <button type="submit" style={{width: '100%'}}>
             Rejoindre
           </button>
@@ -229,34 +275,78 @@ function GamePlayer() {
           <div>
             <h3>Tour {(currentRoundData.currentRoundIndex || 0) + 1} / {currentRoundData.totalRounds}</h3>
 
-            <div className="image-container">
-              <img
-                src={currentRoundData.currentRound.imageUrl}
-                alt="Image générée"
-              />
-            </div>
+            {/* Show image if available */}
+            {currentRoundData.currentRound.imageUrl && (
+              <div className="image-container">
+                <img
+                  src={currentRoundData.currentRound.imageUrl}
+                  alt={currentRoundData.currentRound.gameType === 'classic_quiz' ? 'Image de la question' : 'Image générée'}
+                />
+              </div>
+            )}
+
+            {/* Show question text for classic quiz */}
+            {currentRoundData.currentRound.question && (
+              <div style={{marginBottom: '1.5rem'}}>
+                <h4 style={{fontSize: '1.3rem', color: '#333'}}>
+                  {currentRoundData.currentRound.question.questionText}
+                </h4>
+              </div>
+            )}
 
             {error && <div className="error">{error}</div>}
             {success && <div className="success">{success}</div>}
 
             {!hasSubmitted ? (
-              <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label>Qui est cette personne ?</label>
-                  <input
-                    type="text"
-                    value={guess}
-                    onChange={(e) => setGuess(e.target.value)}
-                    placeholder="Entrez le nom"
-                    required
-                    autoFocus
-                  />
-                </div>
+              <>
+                {/* AI Image Generation - Text input */}
+                {currentRoundData.currentRound.gameType === 'ai_image_generation' && (
+                  <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                      <label>Qui est cette personne ?</label>
+                      <input
+                        type="text"
+                        value={guess}
+                        onChange={(e) => setGuess(e.target.value)}
+                        placeholder="Entrez le nom"
+                        required
+                        autoFocus
+                      />
+                    </div>
 
-                <button type="submit" style={{width: '100%', fontSize: '1.2rem'}}>
-                  Envoyer ma Réponse
-                </button>
-              </form>
+                    <button type="submit" style={{width: '100%', fontSize: '1.2rem'}}>
+                      Envoyer ma Réponse
+                    </button>
+                  </form>
+                )}
+
+                {/* Classic Quiz - Multiple choice buttons */}
+                {currentRoundData.currentRound.gameType === 'classic_quiz' && currentRoundData.currentRound.question && (
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                    {currentRoundData.currentRound.question.allAnswers.map((answer, index) => (
+                      <button
+                        key={index}
+                        className="quiz-answer-button"
+                        onClick={async () => {
+                          if (!currentRoundData?.currentRound || !player?.id) return;
+                          try {
+                            await submitAnswer(currentRoundData.currentRound.id, player.id, answer);
+                            setGuess(answer);
+                            setHasSubmitted(true);
+                            setSuccess('Réponse enregistrée!');
+                            setError('');
+                          } catch (err) {
+                            setError('Erreur lors de l\'envoi de la réponse');
+                            console.error(err);
+                          }
+                        }}
+                      >
+                        {answer}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="info-box">
                 <p>✓ Votre réponse a été enregistrée: <strong>{guess}</strong></p>

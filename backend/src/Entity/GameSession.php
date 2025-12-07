@@ -33,6 +33,9 @@ class GameSession
     public const STATUS_IN_PROGRESS = 'in_progress';
     public const STATUS_COMPLETED = 'completed';
 
+    public const TYPE_AI_IMAGE_GENERATION = 'ai_image_generation';
+    public const TYPE_CLASSIC_QUIZ = 'classic_quiz';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -43,6 +46,10 @@ class GameSession
     #[Assert\NotBlank]
     #[Groups(['game_session:read', 'game_session:write'])]
     private ?string $name = null;
+
+    #[ORM\Column(length: 50)]
+    #[Groups(['game_session:read', 'game_session:write'])]
+    private string $gameType = self::TYPE_AI_IMAGE_GENERATION;
 
     #[ORM\Column(length: 50)]
     #[Groups(['game_session:read', 'game_session:write'])]
@@ -92,6 +99,17 @@ class GameSession
     public function setName(string $name): static
     {
         $this->name = $name;
+        return $this;
+    }
+
+    public function getGameType(): string
+    {
+        return $this->gameType;
+    }
+
+    public function setGameType(string $gameType): static
+    {
+        $this->gameType = $gameType;
         return $this;
     }
 

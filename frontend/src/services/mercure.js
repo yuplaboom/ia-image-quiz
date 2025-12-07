@@ -127,6 +127,48 @@ export function subscribeToRound(sessionId, roundId, callbacks = {}) {
 }
 
 /**
+ * Subscribe to global sessions updates (for new session notifications)
+ * @param {Object} callbacks - Event callbacks
+ * @param {Function} callbacks.onNewSession - Called when a new session is created
+ * @returns {EventSource} The EventSource instance (call .close() to unsubscribe)
+ */
+export function subscribeToGlobalSessions(callbacks = {}) {
+  const topics = ['global/sessions'];
+
+  const url = new URL(MERCURE_HUB_URL);
+  topics.forEach(topic => {
+    url.searchParams.append('topic', topic);
+  });
+
+  console.log('[Mercure] Subscribing to global sessions:', url.toString());
+
+  const eventSource = new EventSource(url.toString());
+
+  eventSource.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      console.log('[Mercure] Received global event:', data);
+
+      if (data.type === 'new_session') {
+        callbacks.onNewSession?.(data.sessionId, data.sessionName);
+      }
+    } catch (error) {
+      console.error('[Mercure] Error parsing global message:', error);
+    }
+  };
+
+  eventSource.onerror = (error) => {
+    console.error('[Mercure] Global connection error:', error);
+  };
+
+  eventSource.onopen = () => {
+    console.log('[Mercure] Global connection established');
+  };
+
+  return eventSource;
+}
+
+/**
  * React hook for subscribing to game session updates
  * @param {number} sessionId - The game session ID
  * @param {Object} callbacks - Event callbacks

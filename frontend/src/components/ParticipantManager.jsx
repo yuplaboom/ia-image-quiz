@@ -9,12 +9,12 @@ function ParticipantManager() {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    physicalTrait1: '',
-    physicalTrait2: '',
+    physicalTraits: [],
     flaw: '',
     quality: '',
     jobTitle: ''
   });
+  const [newTrait, setNewTrait] = useState('');
 
   useEffect(() => {
     loadParticipants();
@@ -35,8 +35,32 @@ function ParticipantManager() {
     }
   };
 
+  const handleAddTrait = (e) => {
+    e.preventDefault();
+    if (newTrait.trim() && !formData.physicalTraits.includes(newTrait.trim())) {
+      setFormData({
+        ...formData,
+        physicalTraits: [...formData.physicalTraits, newTrait.trim()]
+      });
+      setNewTrait('');
+    }
+  };
+
+  const handleRemoveTrait = (traitToRemove) => {
+    setFormData({
+      ...formData,
+      physicalTraits: formData.physicalTraits.filter(t => t !== traitToRemove)
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (formData.physicalTraits.length === 0) {
+      setError('Veuillez ajouter au moins un trait physique');
+      return;
+    }
+
     try {
       if (editingId) {
         await updateParticipant(editingId, formData);
@@ -46,7 +70,7 @@ function ParticipantManager() {
       resetForm();
       loadParticipants();
     } catch (err) {
-      setError('Erreur lors de la sauvegarde');
+      setError('Erreur lors de la sauvegarde: ' + getApiErrorMessage(err));
       console.error(err);
     }
   };
@@ -55,8 +79,7 @@ function ParticipantManager() {
     setEditingId(participant.id);
     setFormData({
       name: participant.name,
-      physicalTrait1: participant.physicalTrait1,
-      physicalTrait2: participant.physicalTrait2,
+      physicalTraits: Array.isArray(participant.physicalTraits) ? participant.physicalTraits : [],
       flaw: participant.flaw,
       quality: participant.quality,
       jobTitle: participant.jobTitle
@@ -79,12 +102,13 @@ function ParticipantManager() {
     setEditingId(null);
     setFormData({
       name: '',
-      physicalTrait1: '',
-      physicalTrait2: '',
+      physicalTraits: [],
       flaw: '',
       quality: '',
       jobTitle: ''
     });
+    setNewTrait('');
+    setError('');
   };
 
   if (loading) return <div className="loading">Chargement...</div>;
@@ -109,25 +133,65 @@ function ParticipantManager() {
           </div>
 
           <div className="form-group">
-            <label>Trait Physique 1 *</label>
-            <input
-              type="text"
-              value={formData.physicalTrait1}
-              onChange={(e) => setFormData({ ...formData, physicalTrait1: e.target.value })}
-              placeholder="Ex: cheveux bruns"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Trait Physique 2 *</label>
-            <input
-              type="text"
-              value={formData.physicalTrait2}
-              onChange={(e) => setFormData({ ...formData, physicalTrait2: e.target.value })}
-              placeholder="Ex: yeux verts"
-              required
-            />
+            <label>Traits Physiques * (au moins 1)</label>
+            <div style={{display: 'flex', gap: '0.5rem', marginBottom: '0.5rem'}}>
+              <input
+                type="text"
+                value={newTrait}
+                onChange={(e) => setNewTrait(e.target.value)}
+                placeholder="Ex: cheveux bruns, yeux verts, grande..."
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddTrait(e);
+                  }
+                }}
+              />
+              <button type="button" onClick={handleAddTrait} disabled={!newTrait.trim()}>
+                Ajouter
+              </button>
+            </div>
+            {formData.physicalTraits.length > 0 && (
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+                padding: '0.5rem',
+                background: '#f5f5f5',
+                borderRadius: '4px'
+              }}>
+                {formData.physicalTraits.map((trait, index) => (
+                  <span key={index} style={{
+                    padding: '0.25rem 0.75rem',
+                    background: '#667eea',
+                    color: 'white',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.9em'
+                  }}>
+                    {trait}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTrait(trait)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'white',
+                        cursor: 'pointer',
+                        padding: '0',
+                        fontSize: '1.2em',
+                        lineHeight: '1'
+                      }}
+                      title="Supprimer"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -190,7 +254,11 @@ function ParticipantManager() {
               {participants.map((participant) => (
                 <tr key={participant.id}>
                   <td><strong>{participant.name}</strong></td>
-                  <td>{participant.physicalTrait1}, {participant.physicalTrait2}</td>
+                  <td>
+                    {Array.isArray(participant.physicalTraits)
+                      ? participant.physicalTraits.join(', ')
+                      : 'Aucun trait'}
+                  </td>
                   <td>{participant.flaw}</td>
                   <td>{participant.quality}</td>
                   <td>{participant.jobTitle}</td>

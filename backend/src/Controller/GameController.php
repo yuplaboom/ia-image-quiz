@@ -24,6 +24,22 @@ class GameController extends AbstractController
     ) {
     }
 
+    #[Route('/session/latest', name: 'latest_session', methods: ['GET'])]
+    public function latestSession(): JsonResponse
+    {
+        $latestSession = $this->gameSessionRepository->findLatest();
+
+        if (!$latestSession) {
+            return $this->json(['error' => 'No game session found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json([
+            'id' => $latestSession->getId(),
+            'name' => $latestSession->getName(),
+            'status' => $latestSession->getStatus(),
+        ]);
+    }
+
     #[Route('/session/{id}/initialize', name: 'initialize', methods: ['POST'])]
     public function initialize(GameSession $gameSession, Request $request): JsonResponse
     {
@@ -149,26 +165,45 @@ class GameController extends AbstractController
     #[Route('/round/{id}/reveal', name: 'reveal', methods: ['GET'])]
     public function reveal(GameRound $round): JsonResponse
     {
-        return $this->json([
-            'correctAnswer' => $round->getParticipant()->getName(),
-            'participant' => [
-                'name' => $round->getParticipant()->getName(),
-                'physicalTrait1' => $round->getParticipant()->getPhysicalTrait1(),
-                'physicalTrait2' => $round->getParticipant()->getPhysicalTrait2(),
-                'flaw' => $round->getParticipant()->getFlaw(),
-                'quality' => $round->getParticipant()->getQuality(),
-                'jobTitle' => $round->getParticipant()->getJobTitle(),
-            ],
+        $response = [
             'answers' => array_map(function($answer) {
+                $player = $answer->getPlayer();
+                $team = $player->getTeam();
                 return [
-                    'playerName' => $answer->getPlayer()->getName(),
+                    'playerName' => $player->getName(),
+                    'teamName' => $team ? $team->getName() : 'Aucune équipe',
                     'guessedName' => $answer->getGuessedName(),
                     'isCorrect' => $answer->isCorrect(),
                 ];
             }, $round->getAnswers()->toArray()),
             'correctAnswersCount' => $round->getCorrectAnswersCount(),
             'totalAnswersCount' => $round->getAnswers()->count(),
-        ]);
+        ];
+
+        // AI Image Generation game type
+        if ($round->getParticipant()) {
+            $response['correctAnswer'] = $round->getParticipant()->getName();
+            $response['participant'] = [
+                'name' => $round->getParticipant()->getName(),
+                'physicalTraits' => $round->getParticipant()->getPhysicalTraits(),
+                'flaw' => $round->getParticipant()->getFlaw(),
+                'quality' => $round->getParticipant()->getQuality(),
+                'jobTitle' => $round->getParticipant()->getJobTitle(),
+            ];
+        }
+        // Classic Quiz game type
+        elseif ($round->getQuestion()) {
+            $response['correctAnswer'] = $round->getQuestion()->getCorrectAnswer();
+            $response['question'] = [
+                'questionText' => $round->getQuestion()->getQuestionText(),
+                'correctAnswer' => $round->getQuestion()->getCorrectAnswer(),
+                'wrongAnswer1' => $round->getQuestion()->getWrongAnswer1(),
+                'wrongAnswer2' => $round->getQuestion()->getWrongAnswer2(),
+                'allAnswers' => $round->getQuestion()->getShuffledAnswers(),
+            ];
+        }
+
+        return $this->json($response);
     }
 
     private function serializeRound(?GameRound $round): ?array
@@ -177,11 +212,22 @@ class GameController extends AbstractController
             return null;
         }
 
-        return [
+        $data = [
             'id' => $round->getId(),
             'imageUrl' => $round->getImageUrl(),
             'roundOrder' => $round->getRoundOrder(),
             'startedAt' => $round->getStartedAt()?->format('Y-m-d H:i:s'),
+            'gameType' => $round->getGameSession()->getGameType(),
         ];
+
+        // Add question data for classic quiz
+        if ($round->getQuestion()) {
+            $data['question'] = [
+                'questionText' => $round->getQuestion()->getQuestionText(),
+                'allAnswers' => $round->getQuestion()->getShuffledAnswers(),
+            ];
+        }
+
+        return $data;
     }
 }

@@ -141,8 +141,9 @@ function GameHost() {
   if (loading) return <div className="loading">Chargement...</div>;
   if (!gameSession) return <div className="error">Jeu introuvable</div>;
 
-  const playerUrl = `${window.location.origin}/play/${sessionId}`;
-  const displayUrl = `${window.location.origin}/display/${sessionId}`;
+  // URLs courtes qui redirigent automatiquement vers la dernière session
+  const playerUrl = `${window.location.origin}/play`;
+  const displayUrl = `${window.location.origin}/display`;
 
   return (
     <div>
@@ -153,8 +154,9 @@ function GameHost() {
       {gameSession.status === 'pending' && (
         <div className="card">
           <h3>Jeu Prêt à Démarrer</h3>
-          <p>Nombre de participants: {gameSession.rounds?.length || 0}</p>
-          <p>Temps par image: {gameSession.timePerImageSeconds} secondes</p>
+          <p>Type de jeu: {gameSession.gameType === 'ai_image_generation' ? 'Génération d\'Images IA' : 'Quiz Classique'}</p>
+          <p>Nombre de {gameSession.gameType === 'ai_image_generation' ? 'participants' : 'questions'}: {gameSession.rounds?.length || 0}</p>
+          <p>Temps par {gameSession.gameType === 'ai_image_generation' ? 'image' : 'question'}: {gameSession.timePerImageSeconds} secondes</p>
 
           <div style={{marginTop: '2rem'}}>
             <h4>URL pour l'affichage (rétroprojecteur):</h4>
@@ -245,15 +247,37 @@ function GameHost() {
               <div style={{marginTop: '2rem'}}>
                 <h3>Réponse: {revealData.correctAnswer}</h3>
 
-                <div className="card" style={{background: '#f8f9fa'}}>
-                  <h4>Description:</h4>
-                  <p>
-                    <strong>Traits physiques:</strong> {revealData.participant.physicalTrait1}, {revealData.participant.physicalTrait2}<br/>
-                    <strong>Défaut:</strong> {revealData.participant.flaw}<br/>
-                    <strong>Qualité:</strong> {revealData.participant.quality}<br/>
-                    <strong>Poste:</strong> {revealData.participant.jobTitle}
-                  </p>
-                </div>
+                {/* AI Image Generation - Show participant info */}
+                {revealData.participant && (
+                  <div className="card" style={{background: '#f8f9fa'}}>
+                    <h4>Description:</h4>
+                    <p>
+                      <strong>Traits physiques:</strong> {Array.isArray(revealData.participant.physicalTraits) ? revealData.participant.physicalTraits.join(', ') : 'Aucun'}<br/>
+                      <strong>Défaut:</strong> {revealData.participant.flaw}<br/>
+                      <strong>Qualité:</strong> {revealData.participant.quality}<br/>
+                      <strong>Poste:</strong> {revealData.participant.jobTitle}
+                    </p>
+                  </div>
+                )}
+
+                {/* Classic Quiz - Show question info */}
+                {revealData.question && (
+                  <div className="card" style={{background: '#f8f9fa'}}>
+                    <h4>Question:</h4>
+                    <p><strong>{revealData.question.questionText}</strong></p>
+                    <h4 style={{marginTop: '1rem'}}>Réponses proposées:</h4>
+                    <ul>
+                      {revealData.question.allAnswers && revealData.question.allAnswers.map((answer, i) => (
+                        <li key={i} style={{
+                          color: answer === revealData.correctAnswer ? '#4caf50' : 'inherit',
+                          fontWeight: answer === revealData.correctAnswer ? 'bold' : 'normal'
+                        }}>
+                          {answer} {answer === revealData.correctAnswer && '✓'}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 <div className="stat-card" style={{marginTop: '1rem'}}>
                   <h3>{revealData.correctAnswersCount} / {revealData.totalAnswersCount}</h3>

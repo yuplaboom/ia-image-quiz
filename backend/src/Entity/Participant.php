@@ -38,15 +38,11 @@ class Participant
     #[Groups(['participant:read', 'participant:write'])]
     private ?string $name = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(type: 'json')]
     #[Assert\NotBlank]
+    #[Assert\Count(min: 1)]
     #[Groups(['participant:read', 'participant:write'])]
-    private ?string $physicalTrait1 = null;
-
-    #[ORM\Column(length: 255)]
-    #[Assert\NotBlank]
-    #[Groups(['participant:read', 'participant:write'])]
-    private ?string $physicalTrait2 = null;
+    private array $physicalTraits = [];
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
@@ -74,6 +70,7 @@ class Participant
     public function __construct()
     {
         $this->createdAt = new \DateTime();
+        $this->physicalTraits = [];
     }
 
     public function getId(): ?int
@@ -92,25 +89,32 @@ class Participant
         return $this;
     }
 
-    public function getPhysicalTrait1(): ?string
+    public function getPhysicalTraits(): array
     {
-        return $this->physicalTrait1;
+        return $this->physicalTraits;
     }
 
-    public function setPhysicalTrait1(string $physicalTrait1): static
+    public function setPhysicalTraits(array $physicalTraits): static
     {
-        $this->physicalTrait1 = $physicalTrait1;
+        $this->physicalTraits = $physicalTraits;
         return $this;
     }
 
-    public function getPhysicalTrait2(): ?string
+    public function addPhysicalTrait(string $trait): static
     {
-        return $this->physicalTrait2;
+        if (!in_array($trait, $this->physicalTraits, true)) {
+            $this->physicalTraits[] = $trait;
+        }
+        return $this;
     }
 
-    public function setPhysicalTrait2(string $physicalTrait2): static
+    public function removePhysicalTrait(string $trait): static
     {
-        $this->physicalTrait2 = $physicalTrait2;
+        $key = array_search($trait, $this->physicalTraits, true);
+        if ($key !== false) {
+            unset($this->physicalTraits[$key]);
+            $this->physicalTraits = array_values($this->physicalTraits); // Re-index
+        }
         return $this;
     }
 
@@ -171,11 +175,12 @@ class Participant
 
     public function getDescription(): string
     {
+        $traitsText = implode(', ', $this->physicalTraits);
+
         return sprintf(
-            "Dans une ambiance de repas de Noël, j'aimerai en premier plan une personne qui se prénomme %s (mais ne pas afficher le prénom), avec 2 traits physiques : %s et %s, qui a comme défaut %s mais en qualité %s, et qui travaille comme %s",
+            "Dans une ambiance de repas de Noël, j'aimerai en premier plan une personne qui se prénomme %s (mais ne pas afficher le prénom), avec les traits physiques : %s, qui a comme défaut %s mais en qualité %s, et qui travaille comme %s",
             $this->name,
-            $this->physicalTrait1,
-            $this->physicalTrait2,
+            $traitsText,
             $this->flaw,
             $this->quality,
             $this->jobTitle
