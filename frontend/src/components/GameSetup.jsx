@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   getParticipants,
   getQuestions,
-  createGameSession,
-  initializeGame,
+  createAIGameSession,
+  createQuizGameSession,
+  initializeAIGame,
+  initializeQuizGame,
   batchStoreImages
 } from '../services/api';
 import { parseApiCollection, getApiErrorMessage } from '../services/apiHelpers';
@@ -126,12 +128,12 @@ function GameSetup() {
     setImageGenerationProgress(null);
 
     // Initialize game with selected participants
-    await initializeGame(sessionId, selectedParticipants);
+    await initializeAIGame(sessionId, selectedParticipants);
   };
 
   const handleCreateQuizGame = async (sessionId) => {
     // Initialize game with selected questions
-    await initializeGame(sessionId, selectedQuestions);
+    await initializeQuizGame(sessionId, selectedQuestions);
   };
 
   const handleCreate = async (e) => {
@@ -151,25 +153,29 @@ function GameSetup() {
       setCreating(true);
       setError('');
 
-      // Create game session
-      const sessionResponse = await createGameSession({
-        name: gameName,
-        gameType: gameType,
-        timePerImageSeconds: timePerImage,
-        status: 'pending'
-      });
+      let sessionResponse, sessionId;
 
-      const sessionId = sessionResponse.data.id;
-
-      // Initialize based on game type
+      // Create game session based on type
       if (gameType === 'ai_image_generation') {
+        sessionResponse = await createAIGameSession({
+          name: gameName,
+          timePerImageSeconds: timePerImage,
+          status: 'pending'
+        });
+        sessionId = sessionResponse.data.id;
         await handleCreateAIGame(sessionId);
       } else {
+        sessionResponse = await createQuizGameSession({
+          name: gameName,
+          timePerImageSeconds: timePerImage,
+          status: 'pending'
+        });
+        sessionId = sessionResponse.data.id;
         await handleCreateQuizGame(sessionId);
       }
 
-      // Redirect to host page
-      navigate(`/admin/host/${sessionId}`);
+      // Redirect to host page with game type
+      navigate(`/admin/host/${sessionId}?type=${gameType}`);
     } catch (err) {
       setError('Erreur lors de la création du jeu: ' + (err.response?.data?.message || err.message));
       console.error(err);

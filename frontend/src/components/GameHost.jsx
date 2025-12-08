@@ -1,18 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import {
-  getGameSession,
-  startGame,
-  nextRound,
-  getCurrentRound,
-  revealAnswer,
-  getGameStatistics
-} from '../services/api';
+import { createGameAPI } from '../services/gameApiAdapter';
 import { subscribeToGameSession } from '../services/mercure';
 
 function GameHost() {
   const { sessionId } = useParams();
+  const [searchParams] = useSearchParams();
+  const [gameAPI, setGameAPI] = useState(null);
   const [gameSession, setGameSession] = useState(null);
   const [currentRoundData, setCurrentRoundData] = useState(null);
   const [revealData, setRevealData] = useState(null);
@@ -44,8 +39,8 @@ function GameHost() {
       onScoreUpdate: (participantId, score) => {
         console.log('Score updated:', participantId, score);
         // Refresh reveal data if showing
-        if (showReveal && currentRoundData?.currentRound) {
-          revealAnswer(currentRoundData.currentRound.id).then(response => {
+        if (showReveal && currentRoundData?.currentRound && gameAPI) {
+          gameAPI.revealAnswer(currentRoundData.currentRound.id).then(response => {
             setRevealData(response.data);
           });
         }
@@ -74,7 +69,11 @@ function GameHost() {
   const loadGameData = async () => {
     try {
       setLoading(true);
-      const response = await getGameSession(sessionId);
+      // Create API adapter from URL params on first load
+      const api = createGameAPI(null, searchParams.toString());
+      setGameAPI(api);
+
+      const response = await api.getGameSession(sessionId);
       setGameSession(response.data);
       await loadCurrentRound();
       setError('');
@@ -87,8 +86,9 @@ function GameHost() {
   };
 
   const loadCurrentRound = async () => {
+    if (!gameAPI) return;
     try {
-      const response = await getCurrentRound(sessionId);
+      const response = await gameAPI.getCurrentRound(sessionId);
       setCurrentRoundData(response.data);
       if (response.data.currentRound) {
         setTimeLeft(gameSession?.timePerImageSeconds || 60);
@@ -99,8 +99,9 @@ function GameHost() {
   };
 
   const handleStart = async () => {
+    if (!gameAPI) return;
     try {
-      await startGame(sessionId);
+      await gameAPI.startGame(sessionId);
       await loadGameData();
     } catch (err) {
       setError('Erreur lors du démarrage du jeu');
@@ -109,9 +110,10 @@ function GameHost() {
   };
 
   const handleReveal = async () => {
+    if (!gameAPI) return;
     try {
       if (!currentRoundData?.currentRound) return;
-      const response = await revealAnswer(currentRoundData.currentRound.id);
+      const response = await gameAPI.revealAnswer(currentRoundData.currentRound.id);
       setRevealData(response.data);
       setShowReveal(true);
     } catch (err) {
@@ -121,13 +123,14 @@ function GameHost() {
   };
 
   const handleNext = async () => {
+    if (!gameAPI) return;
     try {
-      const response = await nextRound(sessionId);
+      const response = await gameAPI.nextRound(sessionId);
       setShowReveal(false);
       setRevealData(null);
 
       if (response.data.status === 'completed') {
-        const statsResponse = await getGameStatistics(sessionId);
+        const statsResponse = await gameAPI.getGameStatistics(sessionId);
         setStatistics(statsResponse.data);
       }
 
@@ -226,11 +229,43 @@ function GameHost() {
             </div>
 
             {currentRoundData.currentRound && (
-              <div className="image-container">
-                <img
-                  src={currentRoundData.currentRound.imageUrl}
-                  alt="Image générée"
-                />
+              <div>
+                {currentRoundData.currentRound.imageUrl && (
+                  <div className="image-container">
+                    <img
+                      src={currentRoundData.currentRound.imageUrl}
+                      alt={currentRoundData.currentRound.gameType === 'classic_quiz' ? 'Image de la question' : 'Image générée'}
+                    />
+                  </div>
+                )}
+
+                {/* Show question text for classic quiz */}
+                {currentRoundData.currentRound.gameType === 'classic_quiz' && currentRoundData.currentRound.question && (
+                  <div style={{marginTop: '1.5rem', padding: '1rem', background: '#f8f9fa', borderRadius: '8px'}}>
+                    <h4 style={{fontSize: '1.3rem', color: '#333', marginTop: 0}}>
+                      {currentRoundData.currentRound.question.questionText}
+                    </h4>
+                    <div style={{marginTop: '1rem'}}>
+                      <p style={{fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem'}}>
+                        <strong>Réponses proposées:</strong>
+                      </p>
+                      <ul style={{listStyle: 'none', padding: 0}}>
+                        {currentRoundData.currentRound.question.allAnswers.map((answer, i) => (
+                          <li key={i} style={{padding: '0.5rem', background: '#fff', marginBottom: '0.5rem', borderRadius: '4px'}}>
+                            {answer}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show simple prompt for AI game */}
+                {currentRoundData.currentRound.gameType === 'ai_image_generation' && (
+                  <div style={{marginTop: '1rem', textAlign: 'center'}}>
+                    <h4>Qui est cette personne ?</h4>
+                  </div>
+                )}
               </div>
             )}
 

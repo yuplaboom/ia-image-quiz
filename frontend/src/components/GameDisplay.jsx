@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import {
-  getGameSession,
-  getCurrentRound,
-  revealAnswer
-} from '../services/api';
+import { createGameAPI } from '../services/gameApiAdapter';
 import { subscribeToGameSession } from '../services/mercure';
 
 function GameDisplay() {
   const { sessionId } = useParams();
+  const [gameAPI, setGameAPI] = useState(null);
   const [gameSession, setGameSession] = useState(null);
   const [currentRoundData, setCurrentRoundData] = useState(null);
   const [revealData, setRevealData] = useState(null);
@@ -44,8 +41,8 @@ function GameDisplay() {
       onScoreUpdate: (participantId, score) => {
         console.log('[Display] Score updated:', participantId, score);
         // Refresh reveal data if showing
-        if (showReveal && currentRoundData?.currentRound) {
-          revealAnswer(currentRoundData.currentRound.id).then(response => {
+        if (showReveal && currentRoundData?.currentRound && gameAPI) {
+          gameAPI.revealAnswer(currentRoundData.currentRound.id).then(response => {
             setRevealData(response.data);
           });
         }
@@ -70,9 +67,21 @@ function GameDisplay() {
   const loadGameData = async () => {
     try {
       setLoading(true);
-      const response = await getGameSession(sessionId);
+      // Create API adapter on first load
+      let api = gameAPI;
+      if (!api) {
+        api = createGameAPI(null, window.location.search);
+        setGameAPI(api);
+      }
+
+      const response = await api.getGameSession(sessionId);
       setGameSession(response.data);
-      await loadCurrentRound();
+
+      // Update API adapter with actual game session data
+      const updatedApi = createGameAPI(response.data, window.location.search);
+      setGameAPI(updatedApi);
+
+      await loadCurrentRound(updatedApi);
     } catch (err) {
       console.error('Error loading game data:', err);
     } finally {
@@ -80,9 +89,10 @@ function GameDisplay() {
     }
   };
 
-  const loadCurrentRound = async () => {
+  const loadCurrentRound = async (api = gameAPI) => {
+    if (!api) return;
     try {
-      const response = await getCurrentRound(sessionId);
+      const response = await api.getCurrentRound(sessionId);
       setCurrentRoundData(response.data);
       if (response.data.currentRound) {
         setTimeLeft(gameSession?.timePerImageSeconds || 60);
@@ -93,9 +103,10 @@ function GameDisplay() {
   };
 
   const handleAutoReveal = async () => {
+    if (!gameAPI) return;
     try {
       if (!currentRoundData?.currentRound) return;
-      const response = await revealAnswer(currentRoundData.currentRound.id);
+      const response = await gameAPI.revealAnswer(currentRoundData.currentRound.id);
       setRevealData(response.data);
       setShowReveal(true);
     } catch (err) {

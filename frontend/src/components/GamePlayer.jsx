@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getGameSession, getCurrentRound, submitAnswer, getPlayer, createPlayer, getTeams, createTeam } from '../services/api';
+import { getPlayer, createPlayer, getTeams, createTeam } from '../services/api';
+import { createGameAPI } from '../services/gameApiAdapter';
 import { subscribeToGameSession, subscribeToGlobalSessions } from '../services/mercure';
 import { getPlayerData, savePlayerData, hasPlayerData, clearPlayerData } from '../services/playerStorage';
 
 function GamePlayer() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
+  const [gameAPI, setGameAPI] = useState(null);
   const [gameSession, setGameSession] = useState(null);
   const [currentRoundData, setCurrentRoundData] = useState(null);
   const [player, setPlayer] = useState(null); // Player entity from backend
@@ -70,9 +72,22 @@ function GamePlayer() {
   const loadGameData = async () => {
     try {
       setLoading(true);
-      const response = await getGameSession(sessionId);
+      // Create API adapter on first load - will detect game type from session data
+      let api = gameAPI;
+      if (!api) {
+        // First load - create adapter with null gameSession (will be detected from response)
+        api = createGameAPI(null, window.location.search);
+        setGameAPI(api);
+      }
+
+      const response = await api.getGameSession(sessionId);
       setGameSession(response.data);
-      await loadCurrentRound();
+
+      // Update API adapter with actual game session data
+      const updatedApi = createGameAPI(response.data, window.location.search);
+      setGameAPI(updatedApi);
+
+      await loadCurrentRound(updatedApi);
       setError('');
     } catch (err) {
       setError('Erreur lors du chargement du jeu');
@@ -82,9 +97,10 @@ function GamePlayer() {
     }
   };
 
-  const loadCurrentRound = async () => {
+  const loadCurrentRound = async (api = gameAPI) => {
+    if (!api) return;
     try {
-      const response = await getCurrentRound(sessionId);
+      const response = await api.getCurrentRound(sessionId);
       const oldRoundId = currentRoundData?.currentRound?.id;
       const newRoundId = response.data?.currentRound?.id;
 
@@ -164,12 +180,12 @@ function GamePlayer() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!currentRoundData?.currentRound || !guess.trim() || !player?.id) {
+    if (!currentRoundData?.currentRound || !guess.trim() || !player?.id || !gameAPI) {
       return;
     }
 
     try {
-      await submitAnswer(currentRoundData.currentRound.id, player.id, guess.trim());
+      await gameAPI.submitAnswer(currentRoundData.currentRound.id, player.id, guess.trim());
       setHasSubmitted(true);
       setSuccess('Réponse enregistrée!');
       setError('');
@@ -328,9 +344,9 @@ function GamePlayer() {
                         key={index}
                         className="quiz-answer-button"
                         onClick={async () => {
-                          if (!currentRoundData?.currentRound || !player?.id) return;
+                          if (!currentRoundData?.currentRound || !player?.id || !gameAPI) return;
                           try {
-                            await submitAnswer(currentRoundData.currentRound.id, player.id, answer);
+                            await gameAPI.submitAnswer(currentRoundData.currentRound.id, player.id, answer);
                             setGuess(answer);
                             setHasSubmitted(true);
                             setSuccess('Réponse enregistrée!');
