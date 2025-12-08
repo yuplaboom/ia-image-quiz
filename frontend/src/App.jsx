@@ -1,16 +1,16 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import './App.css';
-import ParticipantManager from './components/ParticipantManager';
-import QuestionManager from './components/QuestionManager';
-import GameSetup from './components/GameSetup';
-import GameHost from './components/GameHost';
+import ParticipantManager from './components/admin/managers/ParticipantManager';
+import QuestionManager from './components/admin/managers/QuestionManager';
+import PlayerManager from './components/admin/managers/PlayerManager';
+import TeamManager from './components/admin/managers/TeamManager';
+import GameSetup from './components/admin/GameSetup';
+import GameHost from './components/admin/GameHost';
 import GamePlayer from './components/GamePlayer';
 import GameDisplay from './components/GameDisplay';
 import CurrentGamePlayer from './components/CurrentGamePlayer';
 import CurrentGameDisplay from './components/CurrentGameDisplay';
 import AdminDashboard from './components/AdminDashboard';
-import TeamManager from './components/TeamManager';
-import PlayerManager from './components/PlayerManager';
 
 function Navigation() {
   const location = useLocation();

@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { QRCodeSVG } from 'qrcode.react';
 import { createGameAPI } from '../services/gameApiAdapter';
 import { subscribeToGameSession } from '../services/mercure';
+import DisplayPending from './display/DisplayPending';
+import DisplayActiveRound from './display/DisplayActiveRound';
+import DisplayReveal from './display/DisplayReveal';
+import DisplayCompleted from './display/DisplayCompleted';
 
 function GameDisplay() {
   const { sessionId } = useParams();
@@ -149,215 +152,18 @@ function GameDisplay() {
 
       {/* Main content area */}
       <div className="display-content">
-        {gameSession.status === 'pending' && (
-          <div className="display-waiting">
-            <h2>En attente du démarrage...</h2>
-            <p>Le jeu va bientôt commencer!</p>
-            <div className="qr-info">
-              <p>Scannez le QR code pour rejoindre:</p>
-              <div style={{margin: '2rem 0'}}>
-                <QRCodeSVG
-                  value={`${window.location.origin}/play`}
-                  size={300}
-                  level="H"
-                  includeMargin={true}
-                  bgColor="#ffffff"
-                  fgColor="#667eea"
-                />
-              </div>
-              <div className="join-url">{window.location.origin}/play</div>
-            </div>
-          </div>
-        )}
+        {gameSession.status === 'pending' && <DisplayPending />}
 
         {gameSession.status === 'in_progress' && currentRoundData?.currentRound && !showReveal && (
-          <div className="display-image-round">
-            {currentRoundData.currentRound.imageUrl && (
-              <div className="display-image-container">
-                <img
-                  src={currentRoundData.currentRound.imageUrl}
-                  alt={currentRoundData.currentRound.gameType === 'classic_quiz' ? 'Image de la question' : 'Image générée'}
-                  className="display-image"
-                />
-              </div>
-            )}
-            <div className="display-question">
-              {currentRoundData.currentRound.gameType === 'ai_image_generation' && (
-                <h2>Qui est cette personne ?</h2>
-              )}
-              {currentRoundData.currentRound.gameType === 'classic_quiz' && currentRoundData.currentRound.question && (
-                <h2>{currentRoundData.currentRound.question.questionText}</h2>
-              )}
-            </div>
-          </div>
+          <DisplayActiveRound currentRoundData={currentRoundData} timeLeft={timeLeft} />
         )}
 
-        {gameSession.status === 'in_progress' && showReveal && revealData && (
-          <div className="display-reveal">
-            <div className="display-answer-section">
-              <h2 className="correct-answer">Réponse: {revealData.correctAnswer}</h2>
-
-              {/* AI Image Generation - Show participant info */}
-              {revealData.participant && (
-                <div className="display-participant-info">
-                  <div className="info-item">
-                    <span className="info-label">Traits physiques:</span>
-                    <span className="info-value">
-                      {Array.isArray(revealData.participant.physicalTraits)
-                        ? revealData.participant.physicalTraits.join(', ')
-                        : `${revealData.participant.physicalTrait1}, ${revealData.participant.physicalTrait2}`}
-                    </span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Défaut:</span>
-                    <span className="info-value">{revealData.participant.flaw}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Qualité:</span>
-                    <span className="info-value">{revealData.participant.quality}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Poste:</span>
-                    <span className="info-value">{revealData.participant.jobTitle}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Classic Quiz - Show question details */}
-              {revealData.question && (
-                <div className="display-participant-info">
-                  <div className="info-item">
-                    <span className="info-label">Question:</span>
-                    <span className="info-value">{revealData.question.questionText}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Réponses proposées:</span>
-                    <span className="info-value">
-                      {revealData.question.allAnswers && revealData.question.allAnswers.map((answer, i) => (
-                        <span key={i} style={{
-                          display: 'block',
-                          marginTop: '0.5rem',
-                          color: answer === revealData.correctAnswer ? '#4caf50' : 'inherit',
-                          fontWeight: answer === revealData.correctAnswer ? 'bold' : 'normal'
-                        }}>
-                          {answer === revealData.correctAnswer && '✓ '}{answer}
-                        </span>
-                      ))}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <div className="display-score-summary">
-                <div className="score-big">
-                  {revealData.correctAnswersCount} / {revealData.totalAnswersCount}
-                </div>
-                <div className="score-label">Bonnes réponses</div>
-              </div>
-            </div>
-
-            {revealData.answers && revealData.answers.length > 0 && (
-              <div className="display-answers-list">
-                <h3>Réponses des joueurs</h3>
-                <div className="answers-grid">
-                  {revealData.answers.map((answer, index) => (
-                    <div
-                      key={index}
-                      className={`answer-card ${answer.isCorrect ? 'correct' : 'incorrect'}`}
-                    >
-                      <div className="answer-player">
-                        {answer.playerName}
-                        <span className="answer-team"> ({answer.teamName})</span>
-                      </div>
-                      <div className="answer-guess">{answer.guessedName}</div>
-                      <div className="answer-result">{answer.isCorrect ? '✓' : '✗'}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+        {gameSession.status === 'in_progress' && showReveal && (
+          <DisplayReveal revealData={revealData} />
         )}
 
-        {gameSession.status === 'completed' && statistics && (
-          <div className="display-final-results">
-            <h2>Jeu Terminé!</h2>
-
-            <div className="display-stats-grid">
-              <div className="stat-big">
-                <div className="stat-value">{statistics.totalRounds}</div>
-                <div className="stat-label">Tours joués</div>
-              </div>
-              <div className="stat-big">
-                <div className="stat-value">{statistics.correctAnswers}</div>
-                <div className="stat-label">Bonnes réponses</div>
-              </div>
-              <div className="stat-big">
-                <div className="stat-value">
-                  {statistics.totalAnswers > 0
-                    ? Math.round((statistics.correctAnswers / statistics.totalAnswers) * 100)
-                    : 0}%
-                </div>
-                <div className="stat-label">Taux de réussite</div>
-              </div>
-            </div>
-
-            {statistics.teamStats && Object.keys(statistics.teamStats).length > 0 && (
-              <div className="display-leaderboard">
-                <h3>Classement par Équipe</h3>
-                <div className="leaderboard-list">
-                  {Object.entries(statistics.teamStats)
-                    .sort(([,a], [,b]) => b.correctAnswers - a.correctAnswers)
-                    .map(([teamName, stats], index) => (
-                      <div key={teamName} className={`leaderboard-item rank-${index + 1}`}>
-                        <div className="rank">{index + 1}</div>
-                        <div className="player-name">
-                          {teamName}
-                          <div style={{fontSize: '0.7em', color: '#888', marginTop: '0.2rem'}}>
-                            {stats.players.join(', ')}
-                          </div>
-                        </div>
-                        <div className="player-score">
-                          {stats.correctAnswers} / {stats.totalAnswers}
-                          <span className="player-percent">
-                            ({Math.round((stats.correctAnswers / stats.totalAnswers) * 100)}%)
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  }
-                </div>
-              </div>
-            )}
-
-            {statistics.playerStats && Object.keys(statistics.playerStats).length > 0 && (
-              <div className="display-leaderboard">
-                <h3>Classement Individuel</h3>
-                <div className="leaderboard-list">
-                  {Object.entries(statistics.playerStats)
-                    .sort(([,a], [,b]) => b.correctAnswers - a.correctAnswers)
-                    .map(([playerName, stats], index) => (
-                      <div key={playerName} className={`leaderboard-item rank-${index + 1}`}>
-                        <div className="rank">{index + 1}</div>
-                        <div className="player-name">
-                          {playerName}
-                          <div style={{fontSize: '0.7em', color: '#888', marginTop: '0.2rem'}}>
-                            {stats.teamName}
-                          </div>
-                        </div>
-                        <div className="player-score">
-                          {stats.correctAnswers} / {stats.totalAnswers}
-                          <span className="player-percent">
-                            ({Math.round((stats.correctAnswers / stats.totalAnswers) * 100)}%)
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  }
-                </div>
-              </div>
-            )}
-          </div>
+        {gameSession.status === 'completed' && (
+          <DisplayCompleted statistics={statistics} />
         )}
       </div>
     </div>

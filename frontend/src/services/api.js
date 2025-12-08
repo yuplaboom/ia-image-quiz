@@ -58,14 +58,14 @@ export const getQuizGameStatistics = (sessionId) =>
   api.get(`/quiz-game/session/${sessionId}/statistics`);
 
 // AI Game Round
-export const submitAIAnswer = (roundId, playerId, guessedName) =>
-  api.post(`/ai-game/round/${roundId}/answer`, { playerId, guessedName });
+export const submitAIAnswer = (roundId, playerId, guessedName, responseTimeMs = null) =>
+  api.post(`/ai-game/round/${roundId}/answer`, { playerId, guessedName, responseTimeMs });
 export const revealAIAnswer = (roundId) =>
   api.get(`/ai-game/round/${roundId}/reveal`);
 
 // Quiz Game Round
-export const submitQuizAnswer = (roundId, playerId, guessedName) =>
-  api.post(`/quiz-game/round/${roundId}/answer`, { playerId, guessedName });
+export const submitQuizAnswer = (roundId, playerId, guessedName, responseTimeMs = null) =>
+  api.post(`/quiz-game/round/${roundId}/answer`, { playerId, guessedName, responseTimeMs });
 export const revealQuizAnswer = (roundId) =>
   api.get(`/quiz-game/round/${roundId}/reveal`);
 
@@ -89,12 +89,13 @@ export const getLatestGameSession = async () => {
 export const getGameSessions = async () => {
   try {
     const [aiResponse, quizResponse] = await Promise.all([
-      getAIGameSessions().catch(() => ({ data: { 'hydra:member': [] } })),
-      getQuizGameSessions().catch(() => ({ data: { 'hydra:member': [] } }))
+      getAIGameSessions().catch(() => ({ data: { member: [], 'hydra:member': [] } })),
+      getQuizGameSessions().catch(() => ({ data: { member: [], 'hydra:member': [] } }))
     ]);
 
-    const aiSessions = aiResponse.data['hydra:member'] || [];
-    const quizSessions = quizResponse.data['hydra:member'] || [];
+    // Support both 'member' and 'hydra:member' formats
+    const aiSessions = aiResponse.data.member || aiResponse.data['hydra:member'] || [];
+    const quizSessions = quizResponse.data.member || quizResponse.data['hydra:member'] || [];
 
     // Combine and mark with type
     const allSessions = [
@@ -102,7 +103,7 @@ export const getGameSessions = async () => {
       ...quizSessions.map(s => ({ ...s, gameType: 'classic_quiz' }))
     ];
 
-    return { data: { 'hydra:member': allSessions } };
+    return { data: { member: allSessions, 'hydra:member': allSessions } };
   } catch (err) {
     throw err;
   }

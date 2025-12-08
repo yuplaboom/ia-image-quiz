@@ -17,7 +17,9 @@ function AdminDashboard() {
       setLoading(true);
       const response = await getGameSessions();
       // Sort by ID descending (latest first)
-      const sortedSessions = (response.data['hydra:member'] || []).sort((a, b) => b.id - a.id);
+      // Support both 'member' and 'hydra:member' formats
+      const sessionsList = response.data.member || response.data['hydra:member'] || [];
+      const sortedSessions = sessionsList.sort((a, b) => b.id - a.id);
       setSessions(sortedSessions);
       setError('');
     } catch (err) {
@@ -64,6 +66,27 @@ function AdminDashboard() {
     );
   };
 
+  const getGameTypeBadge = (gameType) => {
+    const badges = {
+      ai_image_generation: { text: 'IA Image', color: '#3498db' },
+      classic_quiz: { text: 'Quiz', color: '#9b59b6' }
+    };
+    const badge = badges[gameType] || { text: 'Inconnu', color: '#95a5a6' };
+
+    return (
+      <span style={{
+        padding: '0.25rem 0.75rem',
+        borderRadius: '12px',
+        fontSize: '0.85rem',
+        fontWeight: '600',
+        backgroundColor: badge.color,
+        color: 'white'
+      }}>
+        {badge.text}
+      </span>
+    );
+  };
+
   if (loading) return <div className="loading">Chargement...</div>;
 
   return (
@@ -93,10 +116,11 @@ function AdminDashboard() {
             <thead>
               <tr>
                 <th>ID</th>
+                <th>Type</th>
                 <th>Nom</th>
                 <th>Statut</th>
-                <th>Participants</th>
-                <th>Temps/Image</th>
+                <th>Rounds</th>
+                <th>Temps/Round</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -104,20 +128,23 @@ function AdminDashboard() {
               {sessions.map((session) => (
                 <tr key={session.id}>
                   <td><strong>#{session.id}</strong></td>
+                  <td>{getGameTypeBadge(session.gameType)}</td>
                   <td>{session.name}</td>
                   <td>{getStatusBadge(session.status)}</td>
                   <td>{session.rounds?.length || 0}</td>
                   <td>{session.timePerImageSeconds}s</td>
                   <td>
                     <div className="actions">
-                      {session.status !== 'completed' && (
-                        <button onClick={() => navigate(`/admin/host/${session.id}`)}>
-                          Gérer
-                        </button>
-                      )}
+                      <button
+                        onClick={() => navigate(`/admin/host/${session.id}?type=${session.gameType}`)}
+                        title="Gérer cette session"
+                      >
+                        {session.status === 'completed' ? 'Voir' : 'Gérer'}
+                      </button>
                       <button
                         className="danger"
                         onClick={() => handleDelete(session.id)}
+                        title="Supprimer cette session"
                       >
                         Supprimer
                       </button>

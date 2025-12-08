@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers, deletePlayer, updatePlayer, getTeams } from '../services/api';
+import { getPlayers, deletePlayer, updatePlayer, getTeams } from '../../../services/api';
 
 function PlayerManager() {
   const navigate = useNavigate();

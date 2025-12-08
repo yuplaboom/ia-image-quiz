@@ -32,6 +32,14 @@ abstract class BaseAnswer
     #[Groups(['answer:read'])]
     protected \DateTimeImmutable $submittedAt;
 
+    #[ORM\Column(nullable: true)]
+    #[Groups(['answer:read', 'answer:write'])]
+    protected ?int $responseTimeMs = null;
+
+    #[ORM\Column]
+    #[Groups(['answer:read'])]
+    protected int $pointsEarned = 0;
+
     public function __construct()
     {
         $this->submittedAt = new \DateTimeImmutable();
@@ -86,6 +94,28 @@ abstract class BaseAnswer
     public function getSubmittedAt(): \DateTimeImmutable
     {
         return $this->submittedAt;
+    }
+
+    public function getResponseTimeMs(): ?int
+    {
+        return $this->responseTimeMs;
+    }
+
+    public function setResponseTimeMs(?int $responseTimeMs): static
+    {
+        $this->responseTimeMs = $responseTimeMs;
+        return $this;
+    }
+
+    public function getPointsEarned(): int
+    {
+        return $this->pointsEarned;
+    }
+
+    public function setPointsEarned(int $pointsEarned): static
+    {
+        $this->pointsEarned = $pointsEarned;
+        return $this;
     }
 
     // Abstract methods

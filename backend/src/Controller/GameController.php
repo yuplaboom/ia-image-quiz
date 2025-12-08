@@ -111,12 +111,13 @@ class GameController extends AbstractController
             $data = json_decode($request->getContent(), true);
             $playerId = $data['playerId'] ?? '';
             $guessedName = $data['guessedName'] ?? '';
+            $responseTimeMs = $data['responseTimeMs'] ?? null;
 
             if (empty($playerId) || empty($guessedName)) {
                 return $this->json(['error' => 'Player name and guessed name are required'], Response::HTTP_BAD_REQUEST);
             }
             $player = $playerRepository->find($playerId);
-            $answer = $this->gameService->submitAnswer($round, $player, $guessedName);
+            $answer = $this->gameService->submitAnswer($round, $player, $guessedName, $responseTimeMs);
 
             return $this->json([
                 'message' => 'Answer submitted successfully',
@@ -126,6 +127,8 @@ class GameController extends AbstractController
                     'playerId' => $answer->getPlayer()->getId(),
                     'guessedName' => $answer->getGuessedName(),
                     'isCorrect' => $answer->isCorrect(),
+                    'pointsEarned' => $answer->getPointsEarned(),
+                    'responseTimeMs' => $answer->getResponseTimeMs(),
                     'submittedAt' => $answer->getSubmittedAt()->format('Y-m-d H:i:s'),
                 ]
             ]);
@@ -174,6 +177,8 @@ class GameController extends AbstractController
                     'teamName' => $team ? $team->getName() : 'Aucune équipe',
                     'guessedName' => $answer->getGuessedName(),
                     'isCorrect' => $answer->isCorrect(),
+                    'pointsEarned' => $answer->getPointsEarned(),
+                    'responseTimeMs' => $answer->getResponseTimeMs(),
                 ];
             }, $round->getAnswers()->toArray()),
             'correctAnswersCount' => $round->getCorrectAnswersCount(),

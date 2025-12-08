@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getQuestions, createQuestion, updateQuestion, deleteQuestion } from '../services/api';
-import { parseApiCollection, getApiErrorMessage } from '../services/apiHelpers';
+import { getQuestions, createQuestion, updateQuestion, deleteQuestion } from '../../../services/api';
+import { parseApiCollection, getApiErrorMessage } from '../../../services/apiHelpers';
 
 function QuestionManager() {
   const [questions, setQuestions] = useState([]);

@@ -241,17 +241,22 @@ class GameService
     /**
      * Submit an answer for the current round
      */
-    public function submitAnswer(GameRound $round, Player $player, string $guessedName): Answer
+    public function submitAnswer(GameRound $round, Player $player, string $guessedName, ?int $responseTimeMs = null): Answer
     {
         $answer = new Answer();
         $answer->setGameRound($round);
         $answer->setPlayer($player);
         $answer->setGuessedName($guessedName);
+        $answer->setResponseTimeMs($responseTimeMs);
 
         // Check if the answer is correct based on game type
         $correctAnswer = $this->getCorrectAnswer($round);
         $isCorrect = strcasecmp(trim($guessedName), trim($correctAnswer)) === 0;
         $answer->setIsCorrect($isCorrect);
+
+        // Calculate points based on response time
+        $points = $this->calculatePoints($isCorrect, $responseTimeMs, $round->getGameSession()->getTimePerImageSeconds());
+        $answer->setPointsEarned($points);
 
         $this->answerRepository->save($answer, true);
 
@@ -383,5 +388,41 @@ class GameService
         }
 
         return $stats;
+    }
+
+    /**
+     * Calculate points based on response time
+     * Formula: If correct, points = MAX_POINTS - ((responseTime / maxTime) * (MAX_POINTS - MIN_POINTS))
+     *
+     * @param bool $isCorrect Whether the answer is correct
+     * @param int|null $responseTimeMs Response time in milliseconds
+     * @param int $maxTimeSeconds Maximum time allowed for the round in seconds
+     * @return int Points earned (0 if incorrect, MIN_POINTS to MAX_POINTS if correct)
+     */
+    private function calculatePoints(bool $isCorrect, ?int $responseTimeMs, int $maxTimeSeconds): int
+    {
+        // No points for incorrect answers
+        if (!$isCorrect) {
+            return 0;
+        }
+
+        // If no response time provided, give minimum points
+        if ($responseTimeMs === null) {
+            return 100;
+        }
+
+        $maxTimeMs = $maxTimeSeconds * 1000;
+        $maxPoints = 1000;
+        $minPoints = 100;
+
+        // Ensure response time is within valid range
+        $responseTimeMs = max(0, min($responseTimeMs, $maxTimeMs));
+
+        // Calculate points: faster response = more points
+        // Linear interpolation from maxPoints (at time 0) to minPoints (at max time)
+        $timeRatio = $responseTimeMs / $maxTimeMs;
+        $points = $maxPoints - ($timeRatio * ($maxPoints - $minPoints));
+
+        return (int) round($points);
     }
 }

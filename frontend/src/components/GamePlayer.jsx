@@ -4,6 +4,10 @@ import { getPlayer, createPlayer, getTeams, createTeam } from '../services/api';
 import { createGameAPI } from '../services/gameApiAdapter';
 import { subscribeToGameSession, subscribeToGlobalSessions } from '../services/mercure';
 import { getPlayerData, savePlayerData, hasPlayerData, clearPlayerData } from '../services/playerStorage';
+import PlayerRegistration from './player/PlayerRegistration';
+import PlayerPending from './player/PlayerPending';
+import PlayerActiveRound from './player/PlayerActiveRound';
+import PlayerCompleted from './player/PlayerCompleted';
 
 function GamePlayer() {
   const { sessionId } = useParams();
@@ -21,6 +25,7 @@ function GamePlayer() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
+  const [roundStartTime, setRoundStartTime] = useState(null);
 
   useEffect(() => {
     loadGameData();
@@ -35,6 +40,7 @@ function GamePlayer() {
         setHasSubmitted(false);
         setGuess('');
         setSuccess('');
+        setRoundStartTime(Date.now()); // Start timing the round
       },
       onGameEnded: (results) => {
         console.log('Game ended:', results);
@@ -111,6 +117,10 @@ function GamePlayer() {
         setHasSubmitted(false);
         setGuess('');
         setSuccess('');
+        setRoundStartTime(Date.now()); // Start timing the new round
+      } else if (!oldRoundId && newRoundId) {
+        // First round loaded
+        setRoundStartTime(Date.now());
       }
     } catch (err) {
       console.error(err);
@@ -185,7 +195,15 @@ function GamePlayer() {
     }
 
     try {
-      await gameAPI.submitAnswer(currentRoundData.currentRound.id, player.id, guess.trim());
+      // Calculate response time in milliseconds
+      const responseTimeMs = roundStartTime ? Date.now() - roundStartTime : null;
+
+      await gameAPI.submitAnswer(
+        currentRoundData.currentRound.id,
+        player.id,
+        guess.trim(),
+        responseTimeMs
+      );
       setHasSubmitted(true);
       setSuccess('Réponse enregistrée!');
       setError('');
@@ -225,159 +243,70 @@ function GamePlayer() {
     initializePlayer();
   }, [sessionId]);
 
+  // Helper functions for submitting answers
+  const handleSubmitQuizAnswer = async (answer) => {
+    if (!currentRoundData?.currentRound || !player?.id || !gameAPI) return;
+    try {
+      // Calculate response time in milliseconds
+      const responseTimeMs = roundStartTime ? Date.now() - roundStartTime : null;
+
+      await gameAPI.submitAnswer(
+        currentRoundData.currentRound.id,
+        player.id,
+        answer,
+        responseTimeMs
+      );
+      setGuess(answer);
+      setHasSubmitted(true);
+      setSuccess('Réponse enregistrée!');
+      setError('');
+    } catch (err) {
+      setError('Erreur lors de l\'envoi de la réponse');
+      console.error(err);
+    }
+  };
+
   if (loading) return <div className="loading">Chargement...</div>;
   if (!gameSession) return <div className="error">Jeu introuvable</div>;
 
   if (!isRegistered) {
     return (
-      <div className="card" style={{maxWidth: '500px', margin: '4rem auto'}}>
-        <h2>Rejoindre le Jeu</h2>
-        <h3>{gameSession.name}</h3>
-
-        <form onSubmit={handleRegister}>
-          <div className="form-group">
-            <label>Votre Nom</label>
-            <input
-              type="text"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Entrez votre nom"
-              required
-              autoFocus
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Votre Équipe</label>
-            <select
-              value={selectedTeam}
-              onChange={(e) => setSelectedTeam(e.target.value)}
-              required={teams.length > 0}
-            >
-              {teams.length === 0 && <option value="">Aucune équipe disponible</option>}
-              {teams.map(team => (
-                <option key={team.id} value={team.id}>{team.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <button type="submit" style={{width: '100%'}}>
-            Rejoindre
-          </button>
-        </form>
-      </div>
+      <PlayerRegistration
+        gameSession={gameSession}
+        playerName={playerName}
+        setPlayerName={setPlayerName}
+        selectedTeam={selectedTeam}
+        setSelectedTeam={setSelectedTeam}
+        teams={teams}
+        onRegister={handleRegister}
+      />
     );
   }
 
   return (
     <div>
-      <div className="card">
-        <h2>{gameSession.name}</h2>
-        <p>Joueur: <strong>{playerName}</strong></p>
+      {gameSession.status === 'pending' && (
+        <PlayerPending gameSession={gameSession} playerName={playerName} />
+      )}
 
-        {gameSession.status === 'pending' && (
-          <div className="info-box">
-            En attente du démarrage du jeu par l'hôte...
-          </div>
-        )}
+      {gameSession.status === 'completed' && (
+        <PlayerCompleted gameSession={gameSession} playerName={playerName} />
+      )}
 
-        {gameSession.status === 'completed' && (
-          <div className="info-box">
-            Le jeu est terminé! Merci d'avoir joué.
-          </div>
-        )}
-
-        {gameSession.status === 'in_progress' && currentRoundData?.currentRound && (
-          <div>
-            <h3>Tour {(currentRoundData.currentRoundIndex || 0) + 1} / {currentRoundData.totalRounds}</h3>
-
-            {/* Show image if available */}
-            {currentRoundData.currentRound.imageUrl && (
-              <div className="image-container">
-                <img
-                  src={currentRoundData.currentRound.imageUrl}
-                  alt={currentRoundData.currentRound.gameType === 'classic_quiz' ? 'Image de la question' : 'Image générée'}
-                />
-              </div>
-            )}
-
-            {/* Show question text for classic quiz */}
-            {currentRoundData.currentRound.question && (
-              <div style={{marginBottom: '1.5rem'}}>
-                <h4 style={{fontSize: '1.3rem', color: '#333'}}>
-                  {currentRoundData.currentRound.question.questionText}
-                </h4>
-              </div>
-            )}
-
-            {error && <div className="error">{error}</div>}
-            {success && <div className="success">{success}</div>}
-
-            {!hasSubmitted ? (
-              <>
-                {/* AI Image Generation - Text input */}
-                {currentRoundData.currentRound.gameType === 'ai_image_generation' && (
-                  <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                      <label>Qui est cette personne ?</label>
-                      <input
-                        type="text"
-                        value={guess}
-                        onChange={(e) => setGuess(e.target.value)}
-                        placeholder="Entrez le nom"
-                        required
-                        autoFocus
-                      />
-                    </div>
-
-                    <button type="submit" style={{width: '100%', fontSize: '1.2rem'}}>
-                      Envoyer ma Réponse
-                    </button>
-                  </form>
-                )}
-
-                {/* Classic Quiz - Multiple choice buttons */}
-                {currentRoundData.currentRound.gameType === 'classic_quiz' && currentRoundData.currentRound.question && (
-                  <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
-                    {currentRoundData.currentRound.question.allAnswers.map((answer, index) => (
-                      <button
-                        key={index}
-                        className="quiz-answer-button"
-                        onClick={async () => {
-                          if (!currentRoundData?.currentRound || !player?.id || !gameAPI) return;
-                          try {
-                            await gameAPI.submitAnswer(currentRoundData.currentRound.id, player.id, answer);
-                            setGuess(answer);
-                            setHasSubmitted(true);
-                            setSuccess('Réponse enregistrée!');
-                            setError('');
-                          } catch (err) {
-                            setError('Erreur lors de l\'envoi de la réponse');
-                            console.error(err);
-                          }
-                        }}
-                      >
-                        {answer}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="info-box">
-                <p>✓ Votre réponse a été enregistrée: <strong>{guess}</strong></p>
-                <p>En attente du tour suivant...</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {gameSession.status === 'in_progress' && !currentRoundData?.currentRound && (
-          <div className="info-box">
-            En attente du prochain tour...
-          </div>
-        )}
-      </div>
+      {gameSession.status === 'in_progress' && (
+        <PlayerActiveRound
+          gameSession={gameSession}
+          playerName={playerName}
+          currentRoundData={currentRoundData}
+          hasSubmitted={hasSubmitted}
+          guess={guess}
+          setGuess={setGuess}
+          error={error}
+          success={success}
+          onSubmitAIAnswer={handleSubmit}
+          onSubmitQuizAnswer={handleSubmitQuizAnswer}
+        />
+      )}
     </div>
   );
 }

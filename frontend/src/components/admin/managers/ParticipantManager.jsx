@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getParticipants, createParticipant, updateParticipant, deleteParticipant } from '../services/api';
-import { parseApiCollection, getApiErrorMessage } from '../services/apiHelpers';
+import { getParticipants, createParticipant, updateParticipant, deleteParticipant } from '../../../services/api';
+import { parseApiCollection, getApiErrorMessage } from '../../../services/apiHelpers';
 
 function ParticipantManager() {
   const [participants, setParticipants] = useState([]);

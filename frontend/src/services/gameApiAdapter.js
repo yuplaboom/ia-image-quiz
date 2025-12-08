@@ -69,10 +69,10 @@ export class GameAPI {
     return this.isAI() ? getAIGameStatistics(sessionId) : getQuizGameStatistics(sessionId);
   }
 
-  submitAnswer(roundId, playerId, guessedName) {
+  submitAnswer(roundId, playerId, guessedName, responseTimeMs = null) {
     return this.isAI()
-      ? submitAIAnswer(roundId, playerId, guessedName)
-      : submitQuizAnswer(roundId, playerId, guessedName);
+      ? submitAIAnswer(roundId, playerId, guessedName, responseTimeMs)
+      : submitQuizAnswer(roundId, playerId, guessedName, responseTimeMs);
   }
 
   revealAnswer(roundId) {

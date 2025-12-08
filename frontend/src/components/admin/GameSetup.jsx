@@ -8,9 +8,9 @@ import {
   initializeAIGame,
   initializeQuizGame,
   batchStoreImages
-} from '../services/api';
-import { parseApiCollection, getApiErrorMessage } from '../services/apiHelpers';
-import { generateImagesForParticipants } from '../services/puterImageGeneration';
+} from '../../services/api';
+import { parseApiCollection, getApiErrorMessage } from '../../services/apiHelpers';
+import { generateImagesForParticipants } from '../../services/puterImageGeneration';
 
 function GameSetup() {
   const navigate = useNavigate();
