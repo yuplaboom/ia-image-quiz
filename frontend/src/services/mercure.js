@@ -62,6 +62,9 @@ export function subscribeToGameSession(sessionId, callbacks = {}) {
         case 'player_joined':
           callbacks.onPlayerJoined?.(data.participant);
           break;
+        case 'reveal_answers':
+          callbacks.onRevealAnswers?.(data.roundId);
+          break;
         default:
           console.warn('[Mercure] Unknown event type:', data.type);
       }
@@ -130,6 +133,7 @@ export function subscribeToRound(sessionId, roundId, callbacks = {}) {
  * Subscribe to global sessions updates (for new session notifications)
  * @param {Object} callbacks - Event callbacks
  * @param {Function} callbacks.onNewSession - Called when a new session is created
+ * @param {Function} callbacks.onSessionActivated - Called when a session is activated
  * @returns {EventSource} The EventSource instance (call .close() to unsubscribe)
  */
 export function subscribeToGlobalSessions(callbacks = {}) {
@@ -151,6 +155,8 @@ export function subscribeToGlobalSessions(callbacks = {}) {
 
       if (data.type === 'new_session') {
         callbacks.onNewSession?.(data.sessionId, data.sessionName);
+      } else if (data.type === 'session_activated') {
+        callbacks.onSessionActivated?.(data.sessionId, data.sessionName, data.gameType);
       }
     } catch (error) {
       console.error('[Mercure] Error parsing global message:', error);

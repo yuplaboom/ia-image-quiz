@@ -76,6 +76,8 @@ export class GameAPI {
   }
 
   revealAnswer(roundId) {
+    console.log('[API] revealAnswer called for round:', roundId);
+    console.trace('[API] revealAnswer stack trace');
     return this.isAI() ? revealAIAnswer(roundId) : revealQuizAnswer(roundId);
   }
 }

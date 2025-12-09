@@ -2,12 +2,14 @@
 
 namespace App\Controller;
 
-use App\Entity\AIGameSession;
-use App\Entity\AIGameRound;
-use App\Repository\AIGameSessionRepository;
-use App\Repository\AIGameRoundRepository;
+use App\Entity\GameSession;
+use App\Entity\GameRound;
+use App\Repository\GameSessionRepository;
+use App\Repository\GameRoundRepository;
 use App\Repository\PlayerRepository;
-use App\Service\AIGameService;
+use App\Service\GameService;
+use App\Service\MercureNotificationService;
+use App\Service\SessionManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,9 +20,10 @@ use Symfony\Component\Routing\Annotation\Route;
 class AIGameController extends AbstractController
 {
     public function __construct(
-        private AIGameService $gameService,
-        private AIGameSessionRepository $gameSessionRepository,
-        private AIGameRoundRepository $gameRoundRepository
+        private GameService $gameService,
+        private GameSessionRepository $gameSessionRepository,
+        private GameRoundRepository $gameRoundRepository,
+        private SessionManager $sessionManager
     ) {
     }
 
@@ -40,8 +43,44 @@ class AIGameController extends AbstractController
         ]);
     }
 
+    #[Route('/session/{id}/activate', name: 'activate_session', methods: ['POST'])]
+    public function activateSession(GameSession $gameSession): JsonResponse
+    {
+        try {
+            $this->sessionManager->activateSession($gameSession);
+
+            return $this->json([
+                'message' => 'Session activated successfully',
+                'session' => [
+                    'id' => $gameSession->getId(),
+                    'name' => $gameSession->getName(),
+                    'isActive' => $gameSession->isActive(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    #[Route('/session/active', name: 'active_session', methods: ['GET'])]
+    public function activeSession(): JsonResponse
+    {
+        $activeSession = $this->sessionManager->getActiveAISession();
+
+        if (!$activeSession) {
+            return $this->json(['error' => 'No active session found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json([
+            'id' => $activeSession->getId(),
+            'name' => $activeSession->getName(),
+            'status' => $activeSession->getStatus(),
+            'isActive' => $activeSession->isActive(),
+        ]);
+    }
+
     #[Route('/session/{id}/initialize', name: 'initialize', methods: ['POST'])]
-    public function initialize(AIGameSession $gameSession, Request $request): JsonResponse
+    public function initialize(GameSession $gameSession, Request $request): JsonResponse
     {
         try {
             $data = json_decode($request->getContent(), true);
@@ -67,7 +106,7 @@ class AIGameController extends AbstractController
     }
 
     #[Route('/session/{id}/start', name: 'start', methods: ['POST'])]
-    public function start(AIGameSession $gameSession): JsonResponse
+    public function start(GameSession $gameSession): JsonResponse
     {
         try {
             $this->gameService->startGame($gameSession);
@@ -82,7 +121,7 @@ class AIGameController extends AbstractController
     }
 
     #[Route('/session/{id}/next', name: 'next_round', methods: ['POST'])]
-    public function nextRound(AIGameSession $gameSession): JsonResponse
+    public function nextRound(GameSession $gameSession): JsonResponse
     {
         try {
             $nextRound = $this->gameService->nextRound($gameSession);
@@ -105,7 +144,7 @@ class AIGameController extends AbstractController
     }
 
     #[Route('/round/{id}/answer', name: 'submit_answer', methods: ['POST'])]
-    public function submitAnswer(AIGameRound $round, PlayerRepository $playerRepository, Request $request): JsonResponse
+    public function submitAnswer(GameRound $round, PlayerRepository $playerRepository, Request $request): JsonResponse
     {
         try {
             $data = json_decode($request->getContent(), true);
@@ -135,7 +174,7 @@ class AIGameController extends AbstractController
     }
 
     #[Route('/session/{id}/current', name: 'current_round', methods: ['GET'])]
-    public function currentRound(AIGameSession $gameSession): JsonResponse
+    public function currentRound(GameSession $gameSession): JsonResponse
     {
         $currentRound = $gameSession->getCurrentRound();
 
@@ -155,7 +194,7 @@ class AIGameController extends AbstractController
     }
 
     #[Route('/session/{id}/statistics', name: 'statistics', methods: ['GET'])]
-    public function statistics(AIGameSession $gameSession): JsonResponse
+    public function statistics(GameSession $gameSession): JsonResponse
     {
         $stats = $this->gameService->getGameStatistics($gameSession);
 
@@ -163,8 +202,14 @@ class AIGameController extends AbstractController
     }
 
     #[Route('/round/{id}/reveal', name: 'reveal', methods: ['GET'])]
-    public function reveal(AIGameRound $round): JsonResponse
+    public function reveal(GameRound $round, MercureNotificationService $mercureService): JsonResponse
     {
+        // Send Mercure notification that answers are being revealed
+        $session = $round->getGameSession();
+        if ($session) {
+            $mercureService->notifyRevealAnswers($session->getId(), $round->getId());
+        }
+
         $response = [
             'answers' => array_map(function($answer) {
                 $player = $answer->getPlayer();
@@ -191,7 +236,7 @@ class AIGameController extends AbstractController
         return $this->json($response);
     }
 
-    private function serializeRound(?AIGameRound $round): ?array
+    private function serializeRound(?GameRound $round): ?array
     {
         if ($round === null) {
             return null;

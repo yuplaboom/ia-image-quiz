@@ -72,26 +72,31 @@ function GameHost() {
   const loadGameData = async () => {
     try {
       setLoading(true);
+      console.log('[GameHost] Loading game data for session:', sessionId);
+      console.log('[GameHost] URL params:', searchParams.toString());
+
       // Create API adapter from URL params on first load
       const api = createGameAPI(null, searchParams.toString());
       setGameAPI(api);
 
       const response = await api.getGameSession(sessionId);
+      console.log('[GameHost] Game session loaded:', response.data);
       setGameSession(response.data);
-      await loadCurrentRound();
+      await loadCurrentRound(api);
       setError('');
     } catch (err) {
-      setError('Erreur lors du chargement du jeu');
-      console.error(err);
+      setError('Erreur lors du chargement du jeu: ' + (err.message || 'Erreur inconnue'));
+      console.error('[GameHost] Error loading game:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadCurrentRound = async () => {
-    if (!gameAPI) return;
+  const loadCurrentRound = async (apiInstance = null) => {
+    const api = apiInstance || gameAPI;
+    if (!api) return;
     try {
-      const response = await gameAPI.getCurrentRound(sessionId);
+      const response = await api.getCurrentRound(sessionId);
       setCurrentRoundData(response.data);
       if (response.data.currentRound) {
         setTimeLeft(gameSession?.timePerImageSeconds || 60);

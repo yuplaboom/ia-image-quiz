@@ -1,24 +1,24 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getLatestGameSession } from '../services/api';
+import { getActiveSession } from '../services/api';
 
 function CurrentGameDisplay() {
   const navigate = useNavigate();
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const redirectToLatest = async () => {
+    const redirectToActive = async () => {
       try {
-        const response = await getLatestGameSession();
+        const response = await getActiveSession();
         const sessionId = response.data.id;
         navigate(`/display/${sessionId}`, { replace: true });
       } catch (err) {
-        console.error('Error fetching latest session:', err);
-        setError('Aucune session de jeu trouvée. Veuillez créer une session depuis la page de configuration.');
+        console.error('Error fetching active session:', err);
+        setError('Aucune session active trouvée. Veuillez activer une session depuis la page admin.');
       }
     };
 
-    redirectToLatest();
+    redirectToActive();
   }, [navigate]);
 
   if (error) {

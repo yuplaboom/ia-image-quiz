@@ -64,7 +64,12 @@ class GameSession
     #[Groups(['game_session:read', 'game_session:write'])]
     private ?int $currentRoundIndex = null;
 
+    #[ORM\Column(options: ['default' => false])]
+    #[Groups(['game_session:read'])]
+    private bool $isActive = false;
+
     #[ORM\OneToMany(mappedBy: 'gameSession', targetEntity: GameRound::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['roundOrder' => 'ASC'])]
     #[Groups(['game_session:read'])]
     private Collection $rounds;
 
@@ -84,6 +89,22 @@ class GameSession
     {
         $this->rounds = new ArrayCollection();
         $this->createdAt = new \DateTime();
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function getIsActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
+        return $this;
     }
 
     public function getId(): ?int

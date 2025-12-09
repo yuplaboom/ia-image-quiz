@@ -109,7 +109,7 @@ class GameRound
         return $this->imageUrl;
     }
 
-    public function setImageUrl(string $imageUrl): static
+    public function setImageUrl(?string $imageUrl): static
     {
         $this->imageUrl = $imageUrl;
         return $this;
@@ -180,5 +180,16 @@ class GameRound
     public function getCorrectAnswersCount(): int
     {
         return $this->answers->filter(fn(Answer $answer) => $answer->isCorrect())->count();
+    }
+
+    public function getCorrectAnswer(): string
+    {
+        if ($this->participant) {
+            return $this->participant->getName();
+        }
+        if ($this->question) {
+            return $this->question->getCorrectAnswer();
+        }
+        return '';
     }
 }

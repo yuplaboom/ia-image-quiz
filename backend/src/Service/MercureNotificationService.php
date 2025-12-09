@@ -142,4 +142,51 @@ class MercureNotificationService
             error_log("Failed to publish new_session update: " . $e->getMessage());
         }
     }
+
+    /**
+     * Notify globally that a session has been activated
+     */
+    public function notifySessionActivated(int $sessionId, string $sessionName, string $gameType): void
+    {
+        try {
+            $update = new Update(
+                topics: ["global/sessions"],
+                data: json_encode([
+                    'type' => 'session_activated',
+                    'sessionId' => $sessionId,
+                    'sessionName' => $sessionName,
+                    'gameType' => $gameType,
+                    'timestamp' => time()
+                ])
+            );
+
+            $this->hub->publish($update);
+        } catch (\Exception $e) {
+            error_log("Failed to publish session_activated update: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notify that answers should be revealed for a round
+     */
+    public function notifyRevealAnswers(int $sessionId, int $roundId): void
+    {
+        error_log("[MERCURE] notifyRevealAnswers called for session=$sessionId round=$roundId");
+        try {
+            $update = new Update(
+                topics: ["game-session/{$sessionId}/rounds"],
+                data: json_encode([
+                    'type' => 'reveal_answers',
+                    'roundId' => $roundId,
+                    'timestamp' => time()
+                ])
+            );
+
+            error_log("[MERCURE] Publishing reveal_answers event");
+            $this->hub->publish($update);
+            error_log("[MERCURE] reveal_answers event published successfully");
+        } catch (\Exception $e) {
+            error_log("[MERCURE] Failed to publish reveal_answers update: " . $e->getMessage());
+        }
+    }
 }

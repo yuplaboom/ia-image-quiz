@@ -57,7 +57,7 @@ function GamePlayer() {
     };
   }, [sessionId]);
 
-  // Subscribe to global sessions to detect new session creation
+  // Subscribe to global sessions to detect new session creation and activation
   useEffect(() => {
     console.log('[GamePlayer] Setting up global session listener');
 
@@ -66,6 +66,13 @@ function GamePlayer() {
         console.log('[GamePlayer] New session detected:', newSessionId, sessionName);
         // Redirect to the new session
         navigate(`/play/${newSessionId}`, { replace: true });
+      },
+      onSessionActivated: (activatedSessionId, sessionName, gameType) => {
+        console.log('[GamePlayer] Session activated:', activatedSessionId, sessionName, gameType);
+        // Only redirect if we're not already on this session
+        if (activatedSessionId != sessionId) {
+          navigate(`/play/${activatedSessionId}`, { replace: true });
+        }
       }
     });
 
@@ -73,7 +80,7 @@ function GamePlayer() {
       console.log('[GamePlayer] Cleaning up global session listener');
       eventSource.close();
     };
-  }, [navigate]);
+  }, [navigate, sessionId]);
 
   const loadGameData = async () => {
     try {

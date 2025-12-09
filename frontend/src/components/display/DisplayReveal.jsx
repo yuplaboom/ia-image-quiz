@@ -1,3 +1,18 @@
+import { memo } from 'react';
+
+const AnswerCard = memo(({ answer }) => (
+  <div className={`answer-card ${answer.isCorrect ? 'correct' : 'incorrect'}`}>
+    <div className="answer-player">
+      {answer.playerName}
+      <span className="answer-team"> ({answer.teamName})</span>
+    </div>
+    <div className="answer-guess">{answer.guessedName}</div>
+    <div className="answer-result">{answer.isCorrect ? '✓' : '✗'}</div>
+  </div>
+));
+
+AnswerCard.displayName = 'AnswerCard';
+
 function DisplayReveal({ revealData }) {
   if (!revealData) return null;
 
@@ -46,7 +61,7 @@ function DisplayReveal({ revealData }) {
               <span className="info-label">Réponses proposées:</span>
               <span className="info-value">
                 {revealData.question.allAnswers && revealData.question.allAnswers.map((answer, i) => (
-                  <span key={i} style={{
+                  <span key={answer} style={{
                     display: 'block',
                     marginTop: '0.5rem',
                     color: answer === revealData.correctAnswer ? '#4caf50' : 'inherit',
@@ -72,18 +87,11 @@ function DisplayReveal({ revealData }) {
         <div className="display-answers-list">
           <h3>Réponses des joueurs</h3>
           <div className="answers-grid">
-            {revealData.answers.map((answer, index) => (
-              <div
-                key={index}
-                className={`answer-card ${answer.isCorrect ? 'correct' : 'incorrect'}`}
-              >
-                <div className="answer-player">
-                  {answer.playerName}
-                  <span className="answer-team"> ({answer.teamName})</span>
-                </div>
-                <div className="answer-guess">{answer.guessedName}</div>
-                <div className="answer-result">{answer.isCorrect ? '✓' : '✗'}</div>
-              </div>
+            {revealData.answers.map((answer) => (
+              <AnswerCard
+                key={`${answer.playerName}-${answer.guessedName}`}
+                answer={answer}
+              />
             ))}
           </div>
         </div>

@@ -17,21 +17,28 @@ export const createParticipant = (data) => api.post('/participants', data);
 export const updateParticipant = (id, data) => api.put(`/participants/${id}`, data);
 export const deleteParticipant = (id) => api.delete(`/participants/${id}`);
 
-// AI Game Sessions
-export const getAIGameSessions = () => api.get('/a_i_game_sessions');
-export const getAIGameSession = (id) => api.get(`/a_i_game_sessions/${id}`);
-export const getLatestAIGameSession = () => api.get('/ai-game/session/latest');
-export const createAIGameSession = (data) => api.post('/a_i_game_sessions', data);
-export const updateAIGameSession = (id, data) => api.put(`/a_i_game_sessions/${id}`, data);
-export const deleteAIGameSession = (id) => api.delete(`/a_i_game_sessions/${id}`);
+// Unified Game Sessions (works for both AI and Quiz)
+export const getAllGameSessions = () => api.get('/game_sessions');
+export const getGameSession = (id) => api.get(`/game_sessions/${id}`);
+export const createGameSession = (data) => api.post('/game_sessions', data);
+export const updateGameSession = (id, data) => api.put(`/game_sessions/${id}`, data);
+export const deleteUnifiedGameSession = (id) => api.delete(`/game_sessions/${id}`);
 
-// Quiz Game Sessions
-export const getQuizGameSessions = () => api.get('/quiz_game_sessions');
-export const getQuizGameSession = (id) => api.get(`/quiz_game_sessions/${id}`);
+// AI Game Sessions (backwards compatibility - uses unified endpoint)
+export const getAIGameSessions = () => api.get('/game_sessions?gameType=ai_image_generation');
+export const getAIGameSession = (id) => api.get(`/game_sessions/${id}`);
+export const getLatestAIGameSession = () => api.get('/ai-game/session/latest');
+export const createAIGameSession = (data) => api.post('/game_sessions', { ...data, gameType: 'ai_image_generation' });
+export const updateAIGameSession = (id, data) => api.put(`/game_sessions/${id}`, data);
+export const deleteAIGameSession = (id) => api.delete(`/game_sessions/${id}`);
+
+// Quiz Game Sessions (backwards compatibility - uses unified endpoint)
+export const getQuizGameSessions = () => api.get('/game_sessions?gameType=classic_quiz');
+export const getQuizGameSession = (id) => api.get(`/game_sessions/${id}`);
 export const getLatestQuizGameSession = () => api.get('/quiz-game/session/latest');
-export const createQuizGameSession = (data) => api.post('/quiz_game_sessions', data);
-export const updateQuizGameSession = (id, data) => api.put(`/quiz_game_sessions/${id}`, data);
-export const deleteQuizGameSession = (id) => api.delete(`/quiz_game_sessions/${id}`);
+export const createQuizGameSession = (data) => api.post('/game_sessions', { ...data, gameType: 'classic_quiz' });
+export const updateQuizGameSession = (id, data) => api.put(`/game_sessions/${id}`, data);
+export const deleteQuizGameSession = (id) => api.delete(`/game_sessions/${id}`);
 
 // AI Game Management
 export const initializeAIGame = (sessionId, participantIds) =>
@@ -44,6 +51,10 @@ export const getCurrentAIRound = (sessionId) =>
   api.get(`/ai-game/session/${sessionId}/current`);
 export const getAIGameStatistics = (sessionId) =>
   api.get(`/ai-game/session/${sessionId}/statistics`);
+export const activateAISession = (sessionId) =>
+  api.post(`/ai-game/session/${sessionId}/activate`);
+export const getActiveAISession = () =>
+  api.get('/ai-game/session/active');
 
 // Quiz Game Management
 export const initializeQuizGame = (sessionId, questionIds) =>
@@ -56,6 +67,10 @@ export const getCurrentQuizRound = (sessionId) =>
   api.get(`/quiz-game/session/${sessionId}/current`);
 export const getQuizGameStatistics = (sessionId) =>
   api.get(`/quiz-game/session/${sessionId}/statistics`);
+export const activateQuizSession = (sessionId) =>
+  api.post(`/quiz-game/session/${sessionId}/activate`);
+export const getActiveQuizSession = () =>
+  api.get('/quiz-game/session/active');
 
 // AI Game Round
 export const submitAIAnswer = (roundId, playerId, guessedName, responseTimeMs = null) =>
@@ -68,6 +83,22 @@ export const submitQuizAnswer = (roundId, playerId, guessedName, responseTimeMs 
   api.post(`/quiz-game/round/${roundId}/answer`, { playerId, guessedName, responseTimeMs });
 export const revealQuizAnswer = (roundId) =>
   api.get(`/quiz-game/round/${roundId}/reveal`);
+
+// Helper function to get active session (tries both types)
+export const getActiveSession = async () => {
+  // Try AI game first
+  try {
+    return await getActiveAISession();
+  } catch (aiErr) {
+    // If AI game fails, try Quiz game
+    try {
+      return await getActiveQuizSession();
+    } catch (quizErr) {
+      // If both fail, throw the original error
+      throw aiErr;
+    }
+  }
+};
 
 // Helper function to get latest session (tries both types)
 export const getLatestGameSession = async () => {
@@ -88,22 +119,8 @@ export const getLatestGameSession = async () => {
 // Helper function to get all game sessions (both AI and Quiz)
 export const getGameSessions = async () => {
   try {
-    const [aiResponse, quizResponse] = await Promise.all([
-      getAIGameSessions().catch(() => ({ data: { member: [], 'hydra:member': [] } })),
-      getQuizGameSessions().catch(() => ({ data: { member: [], 'hydra:member': [] } }))
-    ]);
-
-    // Support both 'member' and 'hydra:member' formats
-    const aiSessions = aiResponse.data.member || aiResponse.data['hydra:member'] || [];
-    const quizSessions = quizResponse.data.member || quizResponse.data['hydra:member'] || [];
-
-    // Combine and mark with type
-    const allSessions = [
-      ...aiSessions.map(s => ({ ...s, gameType: 'ai_image_generation' })),
-      ...quizSessions.map(s => ({ ...s, gameType: 'classic_quiz' }))
-    ];
-
-    return { data: { member: allSessions, 'hydra:member': allSessions } };
+    // Use the unified endpoint directly
+    return await getAllGameSessions();
   } catch (err) {
     throw err;
   }
@@ -122,6 +139,16 @@ export const deleteGameSession = async (sessionId) => {
       throw err;
     }
   }
+};
+
+// Helper function to activate a session (based on game type)
+export const activateSession = async (sessionId, gameType) => {
+  if (gameType === 'ai_image_generation') {
+    return await activateAISession(sessionId);
+  } else if (gameType === 'classic_quiz') {
+    return await activateQuizSession(sessionId);
+  }
+  throw new Error('Unknown game type');
 };
 
 // Players

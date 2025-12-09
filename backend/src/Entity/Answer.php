@@ -48,6 +48,14 @@ class Answer
     #[Groups(['answer:read', 'game_round:read'])]
     private bool $isCorrect = false;
 
+    #[ORM\Column(nullable: true)]
+    #[Groups(['answer:read', 'answer:write'])]
+    private ?int $responseTimeMs = null;
+
+    #[ORM\Column]
+    #[Groups(['answer:read'])]
+    private int $pointsEarned = 0;
+
     #[ORM\Column(type: 'datetime')]
     #[Groups(['answer:read'])]
     private ?\DateTimeInterface $submittedAt = null;
@@ -115,5 +123,27 @@ class Answer
     public function getPlayer(): ?Player
     {
         return $this->player;
+    }
+
+    public function getResponseTimeMs(): ?int
+    {
+        return $this->responseTimeMs;
+    }
+
+    public function setResponseTimeMs(?int $responseTimeMs): static
+    {
+        $this->responseTimeMs = $responseTimeMs;
+        return $this;
+    }
+
+    public function getPointsEarned(): int
+    {
+        return $this->pointsEarned;
+    }
+
+    public function setPointsEarned(int $pointsEarned): static
+    {
+        $this->pointsEarned = $pointsEarned;
+        return $this;
     }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getGameSessions, deleteGameSession } from '../services/api';
+import { getGameSessions, deleteGameSession, activateSession } from '../services/api';
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -40,6 +40,16 @@ function AdminDashboard() {
       await loadSessions();
     } catch (err) {
       setError('Erreur lors de la suppression');
+      console.error(err);
+    }
+  };
+
+  const handleActivate = async (sessionId, gameType) => {
+    try {
+      await activateSession(sessionId, gameType);
+      await loadSessions();
+    } catch (err) {
+      setError('Erreur lors de l\'activation de la session');
       console.error(err);
     }
   };
@@ -119,6 +129,7 @@ function AdminDashboard() {
                 <th>Type</th>
                 <th>Nom</th>
                 <th>Statut</th>
+                <th>Active</th>
                 <th>Rounds</th>
                 <th>Temps/Round</th>
                 <th>Actions</th>
@@ -126,11 +137,30 @@ function AdminDashboard() {
             </thead>
             <tbody>
               {sessions.map((session) => (
-                <tr key={session.id}>
+                <tr key={`${session.gameType}-${session.id}`} style={{
+                  backgroundColor: session.isActive ? '#e8f5e9' : 'transparent'
+                }}>
                   <td><strong>#{session.id}</strong></td>
                   <td>{getGameTypeBadge(session.gameType)}</td>
-                  <td>{session.name}</td>
+                  <td>
+                    {session.name}
+                    {session.isActive && <span style={{marginLeft: '0.5rem', fontSize: '1.2rem'}}>⭐</span>}
+                  </td>
                   <td>{getStatusBadge(session.status)}</td>
+                  <td style={{textAlign: 'center'}}>
+                    {session.isActive ? (
+                      <span style={{color: '#4caf50', fontWeight: 'bold'}}>✓</span>
+                    ) : (
+                      <button
+                        className="success"
+                        onClick={() => handleActivate(session.id, session.gameType)}
+                        title="Activer cette session"
+                        style={{padding: '0.25rem 0.5rem', fontSize: '0.85rem'}}
+                      >
+                        Activer
+                      </button>
+                    )}
+                  </td>
                   <td>{session.rounds?.length || 0}</td>
                   <td>{session.timePerImageSeconds}s</td>
                   <td>
