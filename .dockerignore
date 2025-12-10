@@ -1,0 +1,71 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+LICENSE
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+.npm
+.yarn
+
+# Frontend build (sera rebuild dans Docker)
+frontend/dist
+frontend/build
+frontend/.vite
+
+# Backend
+backend/var/cache
+backend/var/log
+backend/var/sessions
+backend/vendor
+backend/.env.local
+backend/.env.*.local
+
+# Tests
+backend/tests
+frontend/tests
+frontend/cypress
+*.test.js
+*.spec.js
+*.test.ts
+*.spec.ts
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+!docker-compose.prod-mysql.yml
+Dockerfile
+Dockerfile.*
+!Dockerfile.prod
+
+# Deploy
+deploy.sh
+.env.prod
+.env.prod.example
+
+# Misc
+*.log
+*.pid
+*.seed
+*.pid.lock
+coverage
+.nyc_output

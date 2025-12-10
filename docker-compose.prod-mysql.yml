@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ia-challenge-mysql-prod
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_password_change_me}
+      - MYSQL_DATABASE=ia_challenge
+      - MYSQL_USER=ia_user
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-user_password_change_me}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+      args:
+        - VITE_API_URL=${VITE_API_URL:-/api}
+    container_name: ia-challenge-prod
+    ports:
+      - "80:80"       # HTTP
+      - "443:443"     # HTTPS
+      - "443:443/udp" # HTTP/3
+    volumes:
+      - backend-var:/app/var
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      - APP_ENV=prod
+      - APP_SECRET=${APP_SECRET}
+      - DATABASE_URL=mysql://ia_user:${MYSQL_PASSWORD:-user_password_change_me}@mysql:3306/ia_challenge?serverVersion=8.0&charset=utf8mb4
+      - SERVER_NAME=${SERVER_NAME:-:80}
+      - FRANKENPHP_CONFIG=worker ./public/index.php
+      - PHP_OPCACHE_ENABLE=1
+      - PHP_OPCACHE_MEMORY_CONSUMPTION=256
+      - PHP_OPCACHE_MAX_ACCELERATED_FILES=20000
+      - PHP_OPCACHE_VALIDATE_TIMESTAMPS=0
+      - MERCURE_URL=http://mercure/.well-known/mercure
+      - MERCURE_PUBLIC_URL=https://${SERVER_NAME:-localhost}/.well-known/mercure
+      - MERCURE_JWT_SECRET=${MERCURE_JWT_KEY:-p1KoDtEqxReAuVphusSuYJk2nZ0tOmVs/aVHpp+t8RY=}
+      - CORS_ALLOW_ORIGIN=^https?://(${SERVER_NAME:-localhost})(:[0-9]+)?$$
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mercure:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - app-network
+
+  mercure:
+    image: dunglas/mercure:latest
+    container_name: ia-challenge-mercure-prod
+    environment:
+      - SERVER_NAME=:80
+      - MERCURE_PUBLISHER_JWT_KEY=${MERCURE_JWT_KEY:-p1KoDtEqxReAuVphusSuYJk2nZ0tOmVs/aVHpp+t8RY=}
+      - MERCURE_SUBSCRIBER_JWT_KEY=${MERCURE_JWT_KEY:-p1KoDtEqxReAuVphusSuYJk2nZ0tOmVs/aVHpp+t8RY=}
+      - "MERCURE_EXTRA_DIRECTIVES=anonymous\ncors_origins https://${SERVER_NAME:-localhost}"
+    restart: always
+    command: /usr/bin/caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+    networks:
+      - app-network
+
+volumes:
+  mysql-data:
+  backend-var:
+  caddy-data:
+  caddy-config:
+
+networks:
+  app-network:
+    driver: bridge
