@@ -62,8 +62,10 @@ COPY --from=frontend-builder /frontend/dist /app/public/frontend
 # Copy Caddyfile for production
 COPY Caddyfile.prod /etc/caddy/Caddyfile
 
-# Set proper permissions
-RUN chown -R www-data:www-data /app/var /app/public
+# Create necessary directories and set permissions
+RUN mkdir -p /app/var/cache /app/var/log /app/var/sessions \
+    && chown -R www-data:www-data /app/var /app/public \
+    && chmod -R 775 /app/var
 
 # Configure PHP for production
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
