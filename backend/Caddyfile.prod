@@ -1,45 +1,31 @@
 {
-    order php_server before file_server
-
     # Enable FrankenPHP with worker mode for production
     frankenphp {
-        # Worker mode significantly improves performance
         worker ./public/index.php
         num_threads {env.FRANKENPHP_NUM_THREADS}
     }
 
-    # HTTP/2 and HTTP/3 support
     servers {
         protocols h1 h2 h3
     }
 
-    # Disable admin API for security
     admin off
 }
 
 {$SERVER_NAME:localhost} {
-    # Set the root directory
     root * /app/public
 
-    # Enable compression
     encode zstd gzip
 
-    # Security headers
     header {
-        # HSTS
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-        # Prevent MIME sniffing
         X-Content-Type-Options "nosniff"
-        # XSS Protection
         X-Frame-Options "SAMEORIGIN"
-        # CSP
         Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;"
-        # Remove server info
         -Server
         -X-Powered-By
     }
 
-    # CORS for API
     @cors_preflight {
         method OPTIONS
         path /api/*
@@ -65,23 +51,16 @@
         }
     }
 
-    # Health check endpoint
     handle /health {
         respond "OK" 200
     }
 
-    # Deny access to sensitive files
     @sensitive {
         path *.yaml *.yml *.env* composer.json composer.lock symfony.lock
         path /config/* /src/* /var/* /vendor/*
     }
     handle @sensitive {
         respond 404
-    }
-
-    # Symfony PHP handler
-    php_server {
-        resolve_root_symlink
     }
 
     # Serve static files with cache
@@ -94,13 +73,17 @@
         file_server
     }
 
-    # Logging (JSON format for production)
+    # Try files or fallback to index.php
+    try_files {path} /index.php
+
+    # ✅ Correct usage of php_server outside of a handle block
+    php_server {
+        resolve_root_symlink
+    }
+
     log {
         output stdout
         format json
         level WARN
     }
-
-    # Try files or fallback to index.php
-    try_files {path} /index.php
 }
