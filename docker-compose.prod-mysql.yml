@@ -24,15 +24,13 @@ services:
 
   backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile.prod
-      args:
-        - VITE_API_URL=${VITE_API_URL:-/api}
-    container_name: ia-challenge-prod
+    container_name: ia-challenge-backend-prod
     ports:
-      - "80:80"       # HTTP
-      - "443:443"     # HTTPS
-      - "443:443/udp" # HTTP/3
+      - "8080:80"     # HTTP - Backend API sur port 8080 (compatible Cloudflare)
+      - "8443:443"    # HTTPS
+      - "8443:443/udp" # HTTP/3
     volumes:
       - backend-var:/app/var
       - caddy-data:/data
@@ -41,16 +39,16 @@ services:
       - APP_ENV=prod
       - APP_SECRET=${APP_SECRET}
       - DATABASE_URL=mysql://ia_user:${MYSQL_PASSWORD:-user_password_change_me}@mysql:3306/ia_challenge?serverVersion=8.0&charset=utf8mb4
-      - SERVER_NAME=${SERVER_NAME:-:80}
+      - SERVER_NAME=:80
       - FRANKENPHP_CONFIG=worker ./public/index.php
       - PHP_OPCACHE_ENABLE=1
       - PHP_OPCACHE_MEMORY_CONSUMPTION=256
       - PHP_OPCACHE_MAX_ACCELERATED_FILES=20000
       - PHP_OPCACHE_VALIDATE_TIMESTAMPS=0
       - MERCURE_URL=http://mercure/.well-known/mercure
-      - MERCURE_PUBLIC_URL=https://${SERVER_NAME:-localhost}/.well-known/mercure
+      - MERCURE_PUBLIC_URL=http://mercure/.well-known/mercure
       - MERCURE_JWT_SECRET=${MERCURE_JWT_KEY:-p1KoDtEqxReAuVphusSuYJk2nZ0tOmVs/aVHpp+t8RY=}
-      - CORS_ALLOW_ORIGIN=^https?://(${SERVER_NAME:-localhost})(:[0-9]+)?$$
+      - CORS_ALLOW_ORIGIN=^https?://.*$$
     restart: always
     depends_on:
       mysql:
@@ -63,6 +61,21 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        - VITE_API_URL=http://itschristmas.lesgrappes.com:8080/api
+    container_name: ia-challenge-frontend-prod
+    ports:
+      - "80:80"       # Frontend sur port 80 (HTTP public)
+    restart: always
+    depends_on:
+      - backend
     networks:
       - app-network
 
