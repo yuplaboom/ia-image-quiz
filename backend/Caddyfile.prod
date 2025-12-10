@@ -1,4 +1,6 @@
 {
+    order php_server before file_server
+
     # Enable FrankenPHP with worker mode for production
     frankenphp {
         # Worker mode significantly improves performance
