@@ -25,6 +25,7 @@
     @phpFiles {
         path /health /api/*
     }
+
     route @phpFiles {
         php_server
     }
