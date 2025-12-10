@@ -246,53 +246,111 @@ function GameDisplay() {
 
   if (loading) {
     return (
-      <div className="display-view">
-        <div className="display-loading">Chargement...</div>
+      <div className="min-h-screen bg-sand flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-20 h-20 border-4 border-wine-300/30 border-t-wine-600 rounded-full animate-spin"></div>
+          <p className="text-wine-700 text-2xl font-medium">Chargement...</p>
+        </div>
       </div>
     );
   }
 
   if (!gameSession) {
     return (
-      <div className="display-view">
-        <div className="display-error">Jeu introuvable</div>
+      <div className="min-h-screen bg-sand flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-24 h-24 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
+            <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Jeu introuvable</h2>
+          <p className="text-wine-700 text-xl">Cette session n'existe pas</p>
+        </div>
       </div>
     );
   }
 
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  const isLowTime = timeLeft <= 10;
+
   return (
-    <div className="display-view">
-      {/* Header with game info */}
-      <div className="display-header">
-        <h1>{gameSession.name}</h1>
-        {gameSession.status === 'in_progress' && currentRoundData && (
-          <div className="display-round-info">
-            <span className="round-counter">
-              Tour {(currentRoundData.currentRoundIndex || 0) + 1} / {currentRoundData.totalRounds}
-            </span>
-            <span className="timer-large">
-              {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-            </span>
+    <div className="h-screen bg-sand flex flex-col overflow-hidden">
+      {/* Header */}
+      <header className="flex-shrink-0 bg-white/70 backdrop-blur-lg border-b border-wine-200 px-8 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-wine-500 to-wine-700 rounded-xl flex items-center justify-center shadow-lg">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{gameSession.name}</h1>
+              <p className="text-wine-600 text-sm">
+                {gameSession.gameType === 'ai_image_generation' ? 'IA Image' : 'Quiz'}
+              </p>
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* Main content area */}
-      <div className="display-content">
-        {gameSession.status === 'pending' && <DisplayPending />}
+          {/* Timer and Round Info */}
+          {gameSession.status === 'in_progress' && currentRoundData && !showReveal && (
+            <div className="flex items-center gap-6">
+              <div className="text-right">
+                <p className="text-wine-600 text-sm">Tour</p>
+                <p className="text-gray-900 text-2xl font-bold">
+                  {(currentRoundData.currentRoundIndex || 0) + 1} / {currentRoundData.totalRounds}
+                </p>
+              </div>
+              <div className={`px-6 py-3 rounded-xl font-mono text-4xl font-bold shadow-lg ${
+                isLowTime
+                  ? 'bg-red-500 text-white animate-pulse'
+                  : 'bg-wine-600 text-white'
+              }`}>
+                {minutes}:{seconds.toString().padStart(2, '0')}
+              </div>
+            </div>
+          )}
 
-        {gameSession.status === 'in_progress' && currentRoundData?.currentRound && !showReveal && (
-          <DisplayActiveRound currentRoundData={currentRoundData} timeLeft={timeLeft} />
-        )}
+          {/* Status Badge */}
+          <div className={`px-4 py-2 rounded-full text-sm font-medium shadow-sm ${
+            gameSession.status === 'pending'
+              ? 'bg-amber-100 text-amber-700 border border-amber-200'
+              : gameSession.status === 'in_progress'
+                ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                : 'bg-gray-100 text-gray-700 border border-gray-200'
+          }`}>
+            <span className={`inline-block w-2 h-2 rounded-full mr-2 ${
+              gameSession.status === 'pending'
+                ? 'bg-amber-500'
+                : gameSession.status === 'in_progress'
+                  ? 'bg-emerald-500 animate-pulse'
+                  : 'bg-gray-500'
+            }`}></span>
+            {gameSession.status === 'pending' ? 'En attente' : gameSession.status === 'in_progress' ? 'En cours' : 'Terminé'}
+          </div>
+        </div>
+      </header>
 
-        {gameSession.status === 'in_progress' && showReveal && (
-          <DisplayReveal revealData={revealData} />
-        )}
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center p-4 overflow-hidden">
+        <div className="w-full max-w-6xl h-full flex items-center justify-center">
+          {gameSession.status === 'pending' && <DisplayPending />}
 
-        {gameSession.status === 'completed' && (
-          <DisplayCompleted statistics={statistics} />
-        )}
-      </div>
+          {gameSession.status === 'in_progress' && currentRoundData?.currentRound && !showReveal && (
+            <DisplayActiveRound currentRoundData={currentRoundData} timeLeft={timeLeft} />
+          )}
+
+          {gameSession.status === 'in_progress' && showReveal && (
+            <DisplayReveal revealData={revealData} />
+          )}
+
+          {gameSession.status === 'completed' && (
+            <DisplayCompleted statistics={statistics} />
+          )}
+        </div>
+      </main>
     </div>
   );
 }
