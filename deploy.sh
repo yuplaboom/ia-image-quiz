@@ -64,7 +64,7 @@ cmd_init() {
 
     # Build and start containers
     print_info "Construction des images Docker..."
-    docker compose -f $COMPOSE_FILE build --no-cache
+    docker compose -f $COMPOSE_FILE build
     print_success "Images construites"
 
     print_info "Démarrage des conteneurs..."

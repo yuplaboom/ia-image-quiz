@@ -8,6 +8,9 @@
         "ext-ctype": "*",
         "ext-iconv": "*",
         "api-platform/core": "^4.1",
+        "doctrine/doctrine-bundle": "^2.18.1",
+        "doctrine/doctrine-migrations-bundle": "^3.7",
+        "doctrine/orm": "^2.20.9",
         "nelmio/cors-bundle": "^2.6",
         "symfony/asset": "7.2.*",
         "symfony/console": "7.2.*",
@@ -22,9 +25,6 @@
         "symfony/yaml": "7.2.*"
     },
     "require-dev": {
-        "doctrine/doctrine-bundle": "^3.1",
-        "doctrine/doctrine-migrations-bundle": "^3.7",
-        "doctrine/orm": "^3.5",
         "symfony/maker-bundle": "^1.65"
     },
     "config": {
