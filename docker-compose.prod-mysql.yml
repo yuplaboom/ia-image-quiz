@@ -70,23 +70,27 @@ services:
       dockerfile: Dockerfile.prod
       args:
         - VITE_API_URL=http://itschristmas.lesgrappes.com:8080/api
+        - VITE_MERCURE_URL=http://itschristmas.lesgrappes.com:3000/.well-known/mercure
     container_name: ia-challenge-frontend-prod
     ports:
       - "80:80"       # Frontend sur port 80 (HTTP public)
     restart: always
     depends_on:
       - backend
+      - mercure
     networks:
       - app-network
 
   mercure:
     image: dunglas/mercure:latest
     container_name: ia-challenge-mercure-prod
+    ports:
+      - "3000:80"  # Exposer Mercure sur port 3000
     environment:
       - SERVER_NAME=:80
       - MERCURE_PUBLISHER_JWT_KEY=${MERCURE_JWT_KEY:-p1KoDtEqxReAuVphusSuYJk2nZ0tOmVs/aVHpp+t8RY=}
       - MERCURE_SUBSCRIBER_JWT_KEY=${MERCURE_JWT_KEY:-p1KoDtEqxReAuVphusSuYJk2nZ0tOmVs/aVHpp+t8RY=}
-      - "MERCURE_EXTRA_DIRECTIVES=anonymous\ncors_origins https://${SERVER_NAME:-localhost}"
+      - "MERCURE_EXTRA_DIRECTIVES=anonymous\ncors_origins *"
     restart: always
     command: /usr/bin/caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
     networks:

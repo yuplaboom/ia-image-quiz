@@ -5,7 +5,7 @@
 
 // Mercure nécessite un JWT pour l'authorization. On génère un token vide pour dev
 // En production, utilisez un vrai token JWT avec la clé MERCURE_SUBSCRIBER_JWT_KEY
-const MERCURE_HUB_URL = 'http://localhost:3000/.well-known/mercure';
+const MERCURE_HUB_URL = import.meta.env.VITE_MERCURE_URL || 'http://localhost:3000/.well-known/mercure';
 
 /**
  * Subscribe to game session updates
