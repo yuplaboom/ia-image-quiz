@@ -17,6 +17,7 @@ class MercureNotificationService
      */
     public function notifyNewRound(int $sessionId, array $roundData): void
     {
+        error_log("[MERCURE] notifyNewRound called for session=$sessionId roundId={$roundData['id']}");
         try {
             $update = new Update(
                 topics: ["game-session/{$sessionId}/rounds"],
@@ -27,9 +28,11 @@ class MercureNotificationService
                 ])
             );
 
+            error_log("[MERCURE] Publishing new_round event");
             $this->hub->publish($update);
+            error_log("[MERCURE] new_round event published successfully");
         } catch (\Exception $e) {
-            error_log("Failed to publish new_round update: " . $e->getMessage());
+            error_log("[MERCURE] Failed to publish new_round update: " . $e->getMessage());
             // Don't throw - we don't want to break the game flow if Mercure fails
         }
     }

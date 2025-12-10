@@ -174,17 +174,21 @@ class GameService
      */
     public function nextRound(GameSession $gameSession): ?GameRound
     {
+        error_log("[GAME] nextRound called for session {$gameSession->getId()}");
+
         if ($gameSession->getStatus() !== GameSession::STATUS_IN_PROGRESS) {
             throw new \Exception('Game is not in progress');
         }
 
         $currentRound = $gameSession->getCurrentRound();
         if ($currentRound) {
+            error_log("[GAME] Ending current round {$currentRound->getId()}");
             $currentRound->setEndedAt(new \DateTime());
         }
 
         $nextIndex = $gameSession->getCurrentRoundIndex() + 1;
         $rounds = $gameSession->getRounds()->toArray();
+        error_log("[GAME] Moving to index $nextIndex out of " . count($rounds));
 
         if ($nextIndex >= count($rounds)) {
             // Game is complete

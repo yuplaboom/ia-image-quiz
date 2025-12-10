@@ -47,68 +47,35 @@ function GameDisplay() {
     // Subscribe to Mercure notifications
     const eventSource = subscribeToGameSession(sessionId, {
       onNewRound: (round) => {
-        console.log('[Display] New round started:', round);
-        // Reload game data to update session status (without loading indicator)
-        loadGameData(false);
+        // Then reload game data to update session status (without loading indicator)
+        loadGameData(false).then(() => {});
+
+        // Reset reveal state FIRST and update ref immediately
         setShowReveal(false);
         setRevealData(null);
+        showRevealRef.current = false;
       },
       onRoundEnded: (roundId, results) => {
-        console.log('[Display] Round ended:', roundId, results);
-        console.log('[Display] currentRoundDataRef at round end:', currentRoundDataRef.current);
-        // Auto-reveal when round ends - use ref to get latest value
-        if (currentRoundDataRef.current?.currentRound) {
-          handleAutoReveal();
-        }
+        // console.log('[Display] Round ended:', roundId, results);
+        // console.log('[Display] currentRoundDataRef at round end:', currentRoundDataRef.current);
+        // // Auto-reveal when round ends - use ref to get latest value
+        // if (currentRoundDataRef.current?.currentRound) {
+        //   handleAutoReveal();
+        // }
       },
       onGameEnded: (results) => {
         console.log('[Display] Game ended:', results);
         setStatistics(results);
         loadGameData(false);
       },
-      onScoreUpdate: (participantId, score) => {
-        console.log('[Display] Score updated:', participantId, score);
-        // TEMPORARILY DISABLED: auto-refresh of reveal data to debug infinite loop
-        // TODO: Re-enable with proper throttling once we fix the loop
-        /*
-        if (currentRoundDataRef.current?.currentRound && showRevealRef.current) {
-          const now = Date.now();
-          const timeSinceLastUpdate = now - lastRevealUpdateRef.current;
-
-          if (timeSinceLastUpdate < 500) {
-            console.log('[Display] Throttling reveal update (last update was', timeSinceLastUpdate, 'ms ago)');
-            return;
-          }
-
-          lastRevealUpdateRef.current = now;
-
-          const api = gameAPIRef.current;
-          const roundData = currentRoundDataRef.current;
-          if (api && roundData?.currentRound) {
-            console.log('[Display] Updating reveal data');
-            api.revealAnswer(roundData.currentRound.id).then(response => {
-              setRevealData(response.data);
-            }).catch(err => {
-              console.error('Error loading reveal data:', err);
-            });
-          }
-        }
-        */
-      },
       onRevealAnswers: (roundId) => {
-        console.log('[Display] Admin revealed answers for round:', roundId);
         const currentData = currentRoundDataRef.current;
-        console.log('[Display] Current round data (from ref):', currentData);
-        console.log('[Display] Current round ID:', currentData?.currentRound?.id);
-        console.log('[Display] Round ID match:', currentData?.currentRound?.id == roundId);
-        console.log('[Display] Types:', typeof currentData?.currentRound?.id, typeof roundId);
-
-        // Reveal when admin clicks reveal - use ref to get latest value
+        // Only reveal if the round ID matches the current round
         if (currentData?.currentRound && currentData.currentRound.id == roundId) {
-          console.log('[Display] Calling handleAutoReveal()');
           handleAutoReveal();
         } else {
-          console.log('[Display] NOT calling handleAutoReveal - condition failed');
+          console.log('[Display] ✗ Round ID does NOT match or no current round - IGNORING');
+          console.log('[Display]   Expected:', currentData?.currentRound?.id, 'Got:', roundId);
         }
       }
     });
@@ -186,26 +153,15 @@ function GameDisplay() {
     if (!api) return;
     try {
       const response = await api.getCurrentRound(sessionId);
+      console.log('[Display] Loading current round:', response.data);
       setCurrentRoundData(response.data);
       if (response.data.currentRound) {
-        setTimeLeft(gameSession?.timePerImageSeconds || 60);
+        const timePerImage = response.data.gameSession?.timePerImageSeconds || gameSession?.timePerImageSeconds || 60;
+        console.log('[Display] Resetting timer to:', timePerImage);
+        setTimeLeft(timePerImage);
       }
     } catch (err) {
       console.error('Error loading current round:', err);
-    }
-  };
-
-  const loadRevealData = async () => {
-    if (!gameAPI || !currentRoundData?.currentRound) return;
-    try {
-      const response = await gameAPI.revealAnswer(currentRoundData.currentRound.id);
-      setRevealData(response.data);
-      // Only set showReveal to true if it's not already showing
-      if (showReveal) {
-        // Just update the data, keep showing reveal
-      }
-    } catch (err) {
-      console.error('Error loading reveal data:', err);
     }
   };
 
@@ -225,18 +181,8 @@ function GameDisplay() {
 
     try {
       console.log('[Display] handleAutoReveal: revealing round', roundData.currentRound.id);
-      const response = await api.revealAnswer(roundData.currentRound.id);
-      setRevealData(response.data);
-      setShowReveal(true);
-    } catch (err) {
-      console.error('Error revealing answer:', err);
-    }
-  };
-
-  const handleManualReveal = async () => {
-    if (!gameAPI || !currentRoundData?.currentRound) return;
-    try {
-      const response = await gameAPI.revealAnswer(currentRoundData.currentRound.id);
+      // Call with notify=false to avoid sending Mercure notification (only fetch data)
+      const response = await api.revealAnswer(roundData.currentRound.id, false);
       setRevealData(response.data);
       setShowReveal(true);
     } catch (err) {
@@ -274,6 +220,9 @@ function GameDisplay() {
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const isLowTime = timeLeft <= 10;
+
+  // Debug: log render decisions
+  console.log('[Display] RENDER - showReveal:', showReveal, 'hasCurrentRound:', !!currentRoundData?.currentRound, 'status:', gameSession?.status);
 
   return (
     <div className="h-screen bg-sand flex flex-col overflow-hidden">

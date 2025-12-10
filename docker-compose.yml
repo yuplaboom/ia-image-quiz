@@ -75,7 +75,7 @@ services:
       - "5173:5173"
     volumes:
       - ./frontend:/app
-      - /app/node_modules
+      - frontend-node-modules:/app/node_modules
     environment:
       - VITE_API_URL=http://localhost:8000/api
     command: npm run dev -- --host
@@ -88,3 +88,4 @@ volumes:
   backend-var:
   caddy-data:
   caddy-config:
+  frontend-node-modules:

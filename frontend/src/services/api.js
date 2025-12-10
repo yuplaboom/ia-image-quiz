@@ -75,14 +75,14 @@ export const getActiveQuizSession = () =>
 // AI Game Round
 export const submitAIAnswer = (roundId, playerId, guessedName, responseTimeMs = null) =>
   api.post(`/ai-game/round/${roundId}/answer`, { playerId, guessedName, responseTimeMs });
-export const revealAIAnswer = (roundId) =>
-  api.get(`/ai-game/round/${roundId}/reveal`);
+export const revealAIAnswer = (roundId, notify = true) =>
+  api.get(`/ai-game/round/${roundId}/reveal`, { params: { notify: notify ? 'true' : 'false' } });
 
 // Quiz Game Round
 export const submitQuizAnswer = (roundId, playerId, guessedName, responseTimeMs = null) =>
   api.post(`/quiz-game/round/${roundId}/answer`, { playerId, guessedName, responseTimeMs });
-export const revealQuizAnswer = (roundId) =>
-  api.get(`/quiz-game/round/${roundId}/reveal`);
+export const revealQuizAnswer = (roundId, notify = true) =>
+  api.get(`/quiz-game/round/${roundId}/reveal`, { params: { notify: notify ? 'true' : 'false' } });
 
 // Helper function to get active session (tries both types)
 export const getActiveSession = async () => {

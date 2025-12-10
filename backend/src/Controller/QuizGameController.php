@@ -202,12 +202,19 @@ class QuizGameController extends AbstractController
     }
 
     #[Route('/round/{id}/reveal', name: 'reveal', methods: ['GET'])]
-    public function reveal(GameRound $round, MercureNotificationService $mercureService): JsonResponse
+    public function reveal(GameRound $round, MercureNotificationService $mercureService, Request $request): JsonResponse
     {
-        // Send Mercure notification that answers are being revealed
-        $session = $round->getGameSession();
-        if ($session) {
-            $mercureService->notifyRevealAnswers($session->getId(), $round->getId());
+        // Send Mercure notification only if notify parameter is not set to false (default: true)
+        $shouldNotify = $request->query->get('notify', 'true') !== 'false';
+
+        if ($shouldNotify) {
+            $session = $round->getGameSession();
+            if ($session) {
+                error_log("[REVEAL] Sending Mercure notification for round {$round->getId()}");
+                $mercureService->notifyRevealAnswers($session->getId(), $round->getId());
+            }
+        } else {
+            error_log("[REVEAL] Skipping Mercure notification (notify=false)");
         }
 
         $response = [
