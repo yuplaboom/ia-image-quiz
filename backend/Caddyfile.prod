@@ -1,8 +1,8 @@
 {
     # Enable FrankenPHP with worker mode for production
     frankenphp {
-        worker ./public/index.php
-        num_threads {env.FRANKENPHP_NUM_THREADS}
+        #worker ./public/index.php
+        #num_threads {env.FRANKENPHP_NUM_THREADS}
     }
 
     # HTTP/3 support
