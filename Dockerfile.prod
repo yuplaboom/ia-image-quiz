@@ -46,7 +46,7 @@ WORKDIR /app
 
 # Copy backend composer files
 COPY backend/composer.json backend/composer.lock ./
-COPY .env.prod backend/.env.local
+
 # Install PHP dependencies (production)
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-progress
 
