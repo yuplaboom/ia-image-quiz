@@ -1,0 +1,50 @@
+FROM dunglas/frankenphp:1-php8.3-alpine
+
+# Install system dependencies and PHP extensions
+RUN install-php-extensions \
+    pdo_mysql \
+    zip \
+    opcache \
+    apcu
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /app
+
+# Copy composer files first (better caching)
+COPY composer.json composer.lock symfony.lock ./
+
+# Install PHP dependencies (production mode - no dev dependencies)
+RUN composer install --no-dev --no-scripts --no-interaction --optimize-autoloader --prefer-dist
+
+# Copy application files
+COPY . /app
+
+# Run composer scripts
+RUN composer dump-autoload --optimize --classmap-authoritative
+RUN APP_ENV=prod composer run-script auto-scripts || true
+
+# Copy Caddyfile for production
+COPY Caddyfile.prod /etc/caddy/Caddyfile
+
+# Create var directory and set permissions
+RUN mkdir -p var/cache var/log var/sessions && \
+    chown -R www-data:www-data var && \
+    chmod -R 775 var
+
+# Configure PHP for production
+RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/opcache.ini && \
+    echo "opcache.memory_consumption=256" >> /usr/local/etc/php/conf.d/opcache.ini && \
+    echo "opcache.max_accelerated_files=20000" >> /usr/local/etc/php/conf.d/opcache.ini && \
+    echo "opcache.validate_timestamps=0" >> /usr/local/etc/php/conf.d/opcache.ini && \
+    echo "realpath_cache_size=4096K" >> /usr/local/etc/php/conf.d/opcache.ini && \
+    echo "realpath_cache_ttl=600" >> /usr/local/etc/php/conf.d/opcache.ini
+
+EXPOSE 80
+EXPOSE 443
+EXPOSE 443/udp
+
+# Use FrankenPHP worker mode for maximum performance
+CMD ["frankenphp", "run", "--config", "/etc/caddy/Caddyfile"]
