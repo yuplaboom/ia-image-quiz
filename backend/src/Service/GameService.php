@@ -37,6 +37,8 @@ class GameService
             return $this->initializeAIImageGame($gameSession, $ids);
         } elseif ($gameSession->getGameType() === GameSession::TYPE_CLASSIC_QUIZ) {
             return $this->initializeClassicQuiz($gameSession, $ids);
+        } elseif ($gameSession->getGameType() === 'anecdote_quiz') {
+            return $this->initializeAnecdoteQuiz($gameSession, $ids);
         }
 
         throw new \Exception('Unknown game type: ' . $gameSession->getGameType());
@@ -114,6 +116,78 @@ class GameService
 
             $gameSession->addRound($round);
             $this->entityManager->persist($round);
+        }
+
+        $this->entityManager->flush();
+
+        // Notify globally that a new session has been created
+        $this->mercureNotificationService->notifyNewSession(
+            $gameSession->getId(),
+            $gameSession->getName()
+        );
+
+        return $gameSession;
+    }
+
+    /**
+     * Initialize an anecdote quiz game with participants
+     * For each participant, create a question from their anecdote
+     */
+    private function initializeAnecdoteQuiz(GameSession $gameSession, array $participantIds): GameSession
+    {
+        $participantsWithAnecdotes = $this->participantRepository->findBy(['id' => $participantIds]);
+
+        if (empty($participants)) {
+            throw new \Exception('No participants found');
+        }
+
+        // Filter participants that have an anecdote
+        $participantsWithAnecdotes = array_filter($participants, fn($p) => !empty($p->getPhraseAnecdote()));
+
+        if (empty($participantsWithAnecdotes)) {
+            throw new \Exception('No participants with anecdotes found');
+        }
+
+        // Shuffle participants for random order
+        shuffle($participantsWithAnecdotes);
+
+        $order = 0;
+        $usedParticipants = [];
+
+        foreach ($participantsWithAnecdotes as $correctParticipant) {
+            // Get 2 random wrong answers from other participants
+            $otherParticipants = array_filter($participantsWithAnecdotes, fn($p) => $p->getId() !== $correctParticipant->getId());
+            $wrongParticipants = array_values($otherParticipants);
+            shuffle($wrongParticipants);
+            $wrongParticipants = array_slice($wrongParticipants, 0, 2);
+
+            if (count($wrongParticipants) < 2) {
+                // Not enough participants to create a question, skip this one
+                continue;
+            }
+
+            // Create a dynamic question using the Question entity
+            $question = new \App\Entity\Question();
+            $question->setQuestionText($correctParticipant->getPhraseAnecdote());
+            $question->setCorrectAnswer($correctParticipant->getName());
+            $question->setWrongAnswer1($wrongParticipants[0]->getName());
+            $question->setWrongAnswer2($wrongParticipants[1]->getName());
+            $question->setCategory('anecdote_quiz');
+
+            $this->entityManager->persist($question);
+
+            // Create a round for this anecdote question
+            $round = new GameRound();
+            $round->setGameSession($gameSession);
+            $round->setQuestion($question);
+            $round->setParticipant($correctParticipant); // Link the participant for reference
+            $round->setRoundOrder($order++);
+
+            $gameSession->addRound($round);
+            $this->entityManager->persist($round);
+
+            // Keep track of used participants to avoid duplicates in wrong answers
+            $usedParticipants[] = $correctParticipant->getId();
         }
 
         $this->entityManager->flush();

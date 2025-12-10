@@ -70,7 +70,8 @@ function AdminDashboard() {
   const getGameTypeBadge = (gameType) => {
     const badges = {
       ai_image_generation: { text: 'IA Image', className: 'bg-wine-100 text-wine-700 border-wine-200' },
-      classic_quiz: { text: 'Quiz', className: 'bg-purple-100 text-purple-700 border-purple-200' }
+      classic_quiz: { text: 'Quiz', className: 'bg-purple-100 text-purple-700 border-purple-200' },
+      anecdote_quiz: { text: 'Quiz Anecdote', className: 'bg-blue-100 text-blue-700 border-blue-200' }
     };
     const badge = badges[gameType] || { text: 'Inconnu', className: 'bg-gray-100 text-gray-600 border-gray-200' };
 

@@ -153,6 +153,20 @@ function PlayerRegistration({
                     className="w-full px-4 py-3 rounded-xl bg-white border border-wine-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-wine-500/30 focus:border-wine-500 transition-all duration-200"
                   />
                 </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Une Anecdote ou Phrase sur vous *
+                  </label>
+                  <textarea
+                    value={participantData?.phraseAnecdote || ''}
+                    onChange={(e) => setParticipantData({...participantData, phraseAnecdote: e.target.value})}
+                    placeholder="Ex: J'ai fait le tour du monde en sac à dos"
+                    required
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl bg-white border border-wine-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-wine-500/30 focus:border-wine-500 transition-all duration-200 resize-none"
+                  />
+                </div>
               </div>
             </div>
 

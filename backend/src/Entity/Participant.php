@@ -60,6 +60,10 @@ class Participant
     private ?string $jobTitle = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['participant:read', 'participant:write'])]
+    private ?string $phraseAnecdote = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
     #[Groups(['participant:read'])]
     private ?string $generatedImageUrl = null;
 
@@ -148,6 +152,17 @@ class Participant
     public function setJobTitle(string $jobTitle): static
     {
         $this->jobTitle = $jobTitle;
+        return $this;
+    }
+
+    public function getPhraseAnecdote(): ?string
+    {
+        return $this->phraseAnecdote;
+    }
+
+    public function setPhraseAnecdote(?string $phraseAnecdote): static
+    {
+        $this->phraseAnecdote = $phraseAnecdote;
         return $this;
     }
 

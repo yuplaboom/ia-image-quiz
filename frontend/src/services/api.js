@@ -36,7 +36,7 @@ export const deleteAIGameSession = (id) => api.delete(`/game_sessions/${id}`);
 export const getQuizGameSessions = () => api.get('/game_sessions?gameType=classic_quiz');
 export const getQuizGameSession = (id) => api.get(`/game_sessions/${id}`);
 export const getLatestQuizGameSession = () => api.get('/quiz-game/session/latest');
-export const createQuizGameSession = (data) => api.post('/game_sessions', { ...data, gameType: 'classic_quiz' });
+export const createQuizGameSession = (data) => api.post('/game_sessions', { gameType: 'classic_quiz', ...data });
 export const updateQuizGameSession = (id, data) => api.put(`/game_sessions/${id}`, data);
 export const deleteQuizGameSession = (id) => api.delete(`/game_sessions/${id}`);
 

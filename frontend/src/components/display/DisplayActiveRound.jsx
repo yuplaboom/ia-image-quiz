@@ -3,7 +3,7 @@ function DisplayActiveRound({ currentRoundData, timeLeft }) {
 
   const { currentRound } = currentRoundData;
   const isAIGame = currentRound.gameType === 'ai_image_generation';
-  const isQuizGame = currentRound.gameType === 'classic_quiz';
+  const isQuizGame = currentRound.gameType === 'classic_quiz' || currentRound.gameType === 'anecdote_quiz';
 
   return (
     <div className="h-full flex flex-col items-center justify-center gap-4 overflow-hidden">

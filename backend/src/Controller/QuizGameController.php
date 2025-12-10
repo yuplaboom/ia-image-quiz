@@ -84,13 +84,26 @@ class QuizGameController extends AbstractController
     {
         try {
             $data = json_decode($request->getContent(), true);
-            $questionIds = $data['questionIds'] ?? [];
 
-            if (empty($questionIds)) {
-                return $this->json(['error' => 'No questions provided'], Response::HTTP_BAD_REQUEST);
+            // Check if this is an anecdote quiz or classic quiz
+            $questionIds = $data['questionIds'] ?? [];
+            $participantIds = $data['participantIds'] ?? [];
+
+            // For anecdote quiz, use participant IDs
+            if ($gameSession->getGameType() === 'anecdote_quiz') {
+                if (empty($participantIds)) {
+                    return $this->json(['error' => 'No participants provided'], Response::HTTP_BAD_REQUEST);
+                }
+                $ids = $participantIds;
+            } else {
+                // For classic quiz, use question IDs
+                if (empty($questionIds)) {
+                    return $this->json(['error' => 'No questions provided'], Response::HTTP_BAD_REQUEST);
+                }
+                $ids = $questionIds;
             }
 
-            $this->gameService->initializeGame($gameSession, $questionIds);
+            $this->gameService->initializeGame($gameSession, $ids);
 
             return $this->json([
                 'message' => 'Game initialized successfully',
@@ -249,16 +262,27 @@ class QuizGameController extends AbstractController
             return null;
         }
 
-        return [
+        $gameType = 'classic_quiz';
+        if ($round->getGameSession()) {
+            $gameType = $round->getGameSession()->getGameType();
+        }
+
+        $result = [
             'id' => $round->getId(),
             'imageUrl' => $round->getImageUrl(),
             'roundOrder' => $round->getRoundOrder(),
             'startedAt' => $round->getStartedAt()?->format('Y-m-d H:i:s'),
-            'gameType' => 'classic_quiz',
-            'question' => [
+            'gameType' => $gameType,
+        ];
+
+        // Add question data if available
+        if ($round->getQuestion()) {
+            $result['question'] = [
                 'questionText' => $round->getQuestion()->getQuestionText(),
                 'allAnswers' => $round->getQuestion()->getShuffledAnswers(),
-            ],
-        ];
+            ];
+        }
+
+        return $result;
     }
 }

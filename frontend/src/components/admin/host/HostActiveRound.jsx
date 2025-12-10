@@ -3,7 +3,7 @@ function HostActiveRound({ currentRoundData, timeLeft, onReveal }) {
 
   const { currentRound, currentRoundIndex, totalRounds } = currentRoundData;
   const isAIGame = currentRound.gameType === 'ai_image_generation';
-  const isQuizGame = currentRound.gameType === 'classic_quiz';
+  const isQuizGame = currentRound.gameType === 'classic_quiz' || currentRound.gameType === 'anecdote_quiz';
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;

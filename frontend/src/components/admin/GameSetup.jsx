@@ -41,7 +41,7 @@ function GameSetup() {
   const loadData = async () => {
     try {
       setLoading(true);
-      if (gameType === 'ai_image_generation') {
+      if (gameType === 'ai_image_generation' || gameType === 'anecdote_quiz') {
         const response = await getParticipants();
         setParticipants(parseApiCollection(response));
       } else {
@@ -131,11 +131,34 @@ function GameSetup() {
     await initializeQuizGame(sessionId, selectedQuestions);
   };
 
+  const handleCreateAnecdoteQuiz = async (sessionId) => {
+    // For anecdote quiz, we need to send participantIds, not questionIds
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/quiz-game/session/${sessionId}/initialize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ participantIds: selectedParticipants }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to initialize anecdote quiz');
+    }
+
+    return await response.json();
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
 
     if (gameType === 'ai_image_generation' && selectedParticipants.length < 2) {
       setError('Veuillez selectionner au moins 2 participants');
+      return;
+    }
+
+    if (gameType === 'anecdote_quiz' && selectedParticipants.length < 3) {
+      setError('Veuillez selectionner au moins 3 participants');
       return;
     }
 
@@ -158,6 +181,15 @@ function GameSetup() {
         });
         sessionId = sessionResponse.data.id;
         await handleCreateAIGame(sessionId);
+      } else if (gameType === 'anecdote_quiz') {
+        sessionResponse = await createQuizGameSession({
+          name: gameName,
+          timePerImageSeconds: timePerImage,
+          status: 'pending',
+          gameType: 'anecdote_quiz'
+        });
+        sessionId = sessionResponse.data.id;
+        await handleCreateAnecdoteQuiz(sessionId);
       } else {
         sessionResponse = await createQuizGameSession({
           name: gameName,
@@ -218,7 +250,7 @@ function GameSetup() {
             <h3 className="text-lg font-semibold text-gray-900">Type de Jeu</h3>
           </div>
           <div className="p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <label
                 className={`relative flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                   gameType === 'ai_image_generation'
@@ -285,6 +317,42 @@ function GameSetup() {
                 {gameType === 'classic_quiz' && (
                   <div className="absolute top-3 right-3">
                     <svg className="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </label>
+
+              <label
+                className={`relative flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                  gameType === 'anecdote_quiz'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <input
+                  type="radio"
+                  value="anecdote_quiz"
+                  checked={gameType === 'anecdote_quiz'}
+                  onChange={(e) => setGameType(e.target.value)}
+                  className="sr-only"
+                />
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  gameType === 'anecdote_quiz' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'
+                }`}>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                  </svg>
+                </div>
+                <div>
+                  <span className={`font-semibold ${gameType === 'anecdote_quiz' ? 'text-blue-900' : 'text-gray-900'}`}>
+                    Quiz Anecdote
+                  </span>
+                  <p className="text-sm text-gray-500">Devinez qui a dit quoi</p>
+                </div>
+                {gameType === 'anecdote_quiz' && (
+                  <div className="absolute top-3 right-3">
+                    <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                   </div>
@@ -393,6 +461,77 @@ function GameSetup() {
                           {participant.quality && `- ${participant.quality}`}{' '}
                           {participant.jobTitle && `- ${participant.jobTitle}`}
                         </p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Anecdote Quiz: Participants Selection */}
+        {gameType === 'anecdote_quiz' && (
+          <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Selection des Participants
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  ({selectedParticipants.length} selectionne{selectedParticipants.length > 1 ? 's' : ''})
+                </span>
+              </h3>
+              {participants.length > 0 && (
+                <button
+                  type="button"
+                  onClick={selectAllParticipants}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  {selectedParticipants.length === participants.length ? 'Tout deselectionner' : 'Tout selectionner'}
+                </button>
+              )}
+            </div>
+            <div className="p-6">
+              {participants.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-500 mb-4">Aucun participant disponible.</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/participants')}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium hover:bg-blue-100 transition-colors"
+                  >
+                    Ajouter des participants
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {participants.map((participant) => (
+                    <label
+                      key={participant.id}
+                      className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                        selectedParticipants.includes(participant.id)
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-100 hover:border-gray-200 bg-gray-50/50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedParticipants.includes(participant.id)}
+                        onChange={() => toggleParticipant(participant.id)}
+                        className="w-5 h-5 mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900">{participant.name}</p>
+                        {participant.phraseAnecdote && (
+                          <p className="text-sm text-blue-600 mt-1 italic">"{participant.phraseAnecdote}"</p>
+                        )}
+                        {!participant.phraseAnecdote && (
+                          <p className="text-sm text-orange-600 mt-1">⚠️ Pas d'anecdote renseignée</p>
+                        )}
                       </div>
                     </label>
                   ))}
@@ -518,6 +657,7 @@ function GameSetup() {
             type="submit"
             disabled={creating || generatingImages ||
               (gameType === 'ai_image_generation' && (selectedParticipants.length < 2 || participants.length === 0)) ||
+              (gameType === 'anecdote_quiz' && (selectedParticipants.length < 3 || participants.length === 0)) ||
               (gameType === 'classic_quiz' && (selectedQuestions.length < 1 || questions.length === 0))
             }
             className="w-full py-4 px-6 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-semibold text-lg shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
@@ -539,6 +679,8 @@ function GameSetup() {
                 Creation en cours...
               </span>
             ) : gameType === 'ai_image_generation' ? (
+              `Creer le Jeu (${selectedParticipants.length} participants)`
+            ) : gameType === 'anecdote_quiz' ? (
               `Creer le Jeu (${selectedParticipants.length} participants)`
             ) : (
               `Creer le Jeu (${selectedQuestions.length} questions)`

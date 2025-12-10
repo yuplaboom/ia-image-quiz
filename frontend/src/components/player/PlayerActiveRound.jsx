@@ -35,7 +35,7 @@ function PlayerActiveRound({
 
   const { currentRound, currentRoundIndex, totalRounds } = currentRoundData;
   const isAIGame = currentRound.gameType === 'ai_image_generation';
-  const isQuizGame = currentRound.gameType === 'classic_quiz';
+  const isQuizGame = currentRound.gameType === 'classic_quiz' || currentRound.gameType === 'anecdote_quiz';
 
   return (
     <div className="min-h-screen py-6 px-4">

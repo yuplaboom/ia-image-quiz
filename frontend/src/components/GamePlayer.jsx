@@ -31,7 +31,8 @@ function GamePlayer() {
     physicalTrait2: '',
     jobTitle: '',
     quality: '',
-    flaw: ''
+    flaw: '',
+    phraseAnecdote: ''
   });
 
   useEffect(() => {
@@ -162,7 +163,8 @@ function GamePlayer() {
 
     // Validate participant data - always required
     if (!participantData.physicalTrait1 || !participantData.physicalTrait2 ||
-        !participantData.jobTitle || !participantData.quality || !participantData.flaw) {
+        !participantData.jobTitle || !participantData.quality || !participantData.flaw ||
+        !participantData.phraseAnecdote) {
       setError('Veuillez remplir toutes les informations du participant');
       return;
     }
@@ -193,7 +195,8 @@ function GamePlayer() {
           ],
           jobTitle: participantData.jobTitle.trim(),
           quality: participantData.quality.trim(),
-          flaw: participantData.flaw.trim()
+          flaw: participantData.flaw.trim(),
+          phraseAnecdote: participantData.phraseAnecdote.trim()
         });
         console.log('Participant created:', participantResponse.data);
       } catch (err) {
