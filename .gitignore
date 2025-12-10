@@ -26,3 +26,9 @@ Thumbs.db
 
 # Docker
 .docker/
+
+# Deployment credentials (NEVER commit these!)
+.env.deploy
+.env.prod
+*.tar.gz
+backup_*.sql

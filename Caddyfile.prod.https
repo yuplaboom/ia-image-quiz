@@ -1,15 +1,23 @@
 {
-    auto_https disable_redirects
+    # Configuration pour HTTPS automatique avec Let's Encrypt
+    email noreply@{$SERVER_NAME}
+
+    # Activer HTTPS automatique
+    auto_https on
+
+    # Admin API désactivé en production
     admin off
 
-    # Define order for php_server
+    # Ordre d'exécution
     order php_server before file_server
 }
 
-:80, :443 {
+# Configuration du serveur avec HTTPS automatique
+{$SERVER_NAME:localhost} {
+    # Root directory
     root * /app/public
 
-    # Enable compression
+    # Compression
     encode zstd gzip
 
     # Security headers
@@ -21,22 +29,22 @@
         Referrer-Policy "strict-origin-when-cross-origin"
     }
 
-    # Health check and API - Use PHP
-    @phpFiles {
+    # Health check and API endpoints
+    @backend {
         path /health /api/*
     }
-    route @phpFiles {
+    route @backend {
         php_server
     }
 
-    # Frontend static files - React SPA
+    # Frontend - React SPA
     route {
         root * /app/public/frontend
         try_files {path} /index.html
         file_server
     }
 
-    # Log
+    # Logs
     log {
         output stdout
         format json

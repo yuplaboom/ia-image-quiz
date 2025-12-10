@@ -1,0 +1,40 @@
+{
+    # Configuration HTTP uniquement (pour test)
+    # Désactive complètement HTTPS
+    auto_https off
+    admin off
+
+    # Ordre d'exécution
+    order php_server before file_server
+}
+
+# HTTP uniquement sur le port 80
+:80 {
+    # Root directory
+    root * /app/public
+
+    # Compression
+    encode zstd gzip
+
+    # Health check and API endpoints
+    @backend {
+        path /health /api/*
+    }
+    route @backend {
+        php_server
+    }
+
+    # Frontend - React SPA
+    route {
+        root * /app/public/frontend
+        try_files {path} /index.html
+        file_server
+    }
+
+    # Logs
+    log {
+        output stdout
+        format json
+        level INFO
+    }
+}
