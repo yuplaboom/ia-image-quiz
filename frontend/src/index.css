@@ -1,68 +1,84 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import "tailwindcss";
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+/* Custom theme inspired by Les Grappes wine website */
+@theme {
+  /* Wine-inspired color palette based on #600143 - deep burgundy/plum tones */
+  --color-wine-50: #faf5f7;
+  --color-wine-100: #f5ebef;
+  --color-wine-200: #e8d3db;
+  --color-wine-300: #d4b0bd;
+  --color-wine-400: #b88395;
+  --color-wine-500: #9a5f75;
+  --color-wine-600: #7d4259;
+  --color-wine-700: #600143;
+  --color-wine-800: #500138;
+  --color-wine-900: #40012d;
+  --color-wine-950: #2a001e;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Cream/Beige accents */
+  --color-cream-50: #fefdfb;
+  --color-cream-100: #fdf9f3;
+  --color-cream-200: #fbf3e6;
+  --color-cream-300: #f7e8d1;
+  --color-cream-400: #f0d5a8;
+  --color-cream-500: #e8c07f;
+  --color-cream-600: #d4a055;
+  --color-cream-700: #b68038;
+  --color-cream-800: #936630;
+  --color-cream-900: #78542a;
+  --color-cream-950: #402b13;
+
+  /* Gold accents for rankings */
+  --color-gold: #fbbf24;
+  --color-silver: #9ca3af;
+  --color-bronze: #cd7f32;
+
+  /* Warm sand background for player/display */
+  --color-sand: #EFD9BA;
+
+  /* Fonts */
+  --font-sans: 'Outfit', system-ui, -apple-system, sans-serif;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+/* Base styles */
+html, body, #root {
+  @apply m-0 p-0;
+  min-height: 100%;
+  height: 100%;
 }
-a:hover {
-  color: #535bf2;
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  @apply font-sans antialiased bg-cream-50 text-gray-900;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+::-webkit-scrollbar-track {
+  @apply bg-cream-100;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+::-webkit-scrollbar-thumb {
+  @apply bg-wine-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-wine-400;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  @apply outline-none ring-2 ring-wine-500 ring-offset-2;
+}
+
+/* Selection color */
+::selection {
+  @apply bg-wine-200 text-wine-900;
 }
