@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, createPlayer, getTeams, createTeam } from '../services/api';
+import { getPlayer, createPlayer, createParticipant, getTeams, createTeam } from '../services/api';
 import { createGameAPI } from '../services/gameApiAdapter';
 import { subscribeToGameSession, subscribeToGlobalSessions } from '../services/mercure';
 import { getPlayerData, savePlayerData, hasPlayerData, clearPlayerData } from '../services/playerStorage';
@@ -26,6 +26,13 @@ function GamePlayer() {
   const [success, setSuccess] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
   const [roundStartTime, setRoundStartTime] = useState(null);
+  const [participantData, setParticipantData] = useState({
+    physicalTrait1: '',
+    physicalTrait2: '',
+    jobTitle: '',
+    quality: '',
+    flaw: ''
+  });
 
   useEffect(() => {
     loadGameData();
@@ -153,6 +160,13 @@ function GamePlayer() {
     e.preventDefault();
     if (!playerName.trim()) return;
 
+    // Validate participant data - always required
+    if (!participantData.physicalTrait1 || !participantData.physicalTrait2 ||
+        !participantData.jobTitle || !participantData.quality || !participantData.flaw) {
+      setError('Veuillez remplir toutes les informations du participant');
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -167,6 +181,26 @@ function GamePlayer() {
         } catch (err) {
           console.error('Error creating default team:', err);
         }
+      }
+
+      // Create participant for all games
+      try {
+        const participantResponse = await createParticipant({
+          name: playerName.trim(),
+          physicalTraits: [
+            participantData.physicalTrait1.trim(),
+            participantData.physicalTrait2.trim()
+          ],
+          jobTitle: participantData.jobTitle.trim(),
+          quality: participantData.quality.trim(),
+          flaw: participantData.flaw.trim()
+        });
+        console.log('Participant created:', participantResponse.data);
+      } catch (err) {
+        console.error('Error creating participant:', err);
+        setError('Erreur lors de la création du participant');
+        setLoading(false);
+        return;
       }
 
       // Create new player
@@ -310,6 +344,8 @@ function GamePlayer() {
         setSelectedTeam={setSelectedTeam}
         teams={teams}
         onRegister={handleRegister}
+        participantData={participantData}
+        setParticipantData={setParticipantData}
       />
     );
   }
