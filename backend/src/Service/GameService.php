@@ -135,8 +135,8 @@ class GameService
      */
     private function initializeAnecdoteQuiz(GameSession $gameSession, array $participantIds): GameSession
     {
-        $participantsWithAnecdotes = $this->participantRepository->findBy(['id' => $participantIds]);
-
+        $participants = $this->participantRepository->findBy(['id' => $participantIds]);
+        $allParticipants = $this->participantRepository->findAll();
         if (empty($participants)) {
             throw new \Exception('No participants found');
         }
@@ -156,11 +156,13 @@ class GameService
 
         foreach ($participantsWithAnecdotes as $correctParticipant) {
             // Get 2 random wrong answers from other participants
-            $otherParticipants = array_filter($participantsWithAnecdotes, fn($p) => $p->getId() !== $correctParticipant->getId());
+            $otherParticipants = array_filter($allParticipants, fn($p) => $p->getId() !== $correctParticipant->getId());
             $wrongParticipants = array_values($otherParticipants);
             shuffle($wrongParticipants);
             $wrongParticipants = array_slice($wrongParticipants, 0, 2);
 
+            // enlever le participant déjà utilisé de allParticipants
+            $allParticipants = array_filter($allParticipants, fn($p) => $p->getId() !== $correctParticipant->getId() && !in_array($p->getId(), $usedParticipants));
             if (count($wrongParticipants) < 2) {
                 // Not enough participants to create a question, skip this one
                 continue;

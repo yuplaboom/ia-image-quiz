@@ -147,6 +147,8 @@ export const activateSession = async (sessionId, gameType) => {
     return await activateAISession(sessionId);
   } else if (gameType === 'classic_quiz') {
     return await activateQuizSession(sessionId);
+  } else if (gameType === 'anecdote_quiz') {
+    return await activateQuizSession(sessionId);
   }
   throw new Error('Unknown game type');
 };
