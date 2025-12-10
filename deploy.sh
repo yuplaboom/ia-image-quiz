@@ -64,11 +64,11 @@ cmd_init() {
 
     # Build and start containers
     print_info "Construction des images Docker..."
-    docker-compose -f $COMPOSE_FILE build --no-cache
+    docker compose -f $COMPOSE_FILE build --no-cache
     print_success "Images construites"
 
     print_info "Démarrage des conteneurs..."
-    docker-compose -f $COMPOSE_FILE up -d
+    docker compose -f $COMPOSE_FILE up -d
     print_success "Conteneurs démarrés"
 
     # Wait for database
@@ -77,12 +77,12 @@ cmd_init() {
 
     # Run migrations
     print_info "Exécution des migrations de base de données..."
-    docker-compose -f $COMPOSE_FILE exec -T backend php bin/console doctrine:migrations:migrate --no-interaction
+    docker compose -f $COMPOSE_FILE exec -T backend php bin/console doctrine:migrations:migrate --no-interaction
     print_success "Migrations appliquées"
 
     # Clear cache
     print_info "Nettoyage du cache..."
-    docker-compose -f $COMPOSE_FILE exec -T backend php bin/console cache:clear
+    docker compose -f $COMPOSE_FILE exec -T backend php bin/console cache:clear
     print_success "Cache nettoyé"
 
     print_success "Déploiement terminé!"
@@ -98,7 +98,7 @@ cmd_start() {
     load_env
 
     print_info "Démarrage des conteneurs..."
-    docker-compose -f $COMPOSE_FILE up -d
+    docker compose -f $COMPOSE_FILE up -d
     print_success "Conteneurs démarrés"
 
     print_info "Application disponible sur: https://${SERVER_NAME:-localhost}"
@@ -106,26 +106,26 @@ cmd_start() {
 
 cmd_stop() {
     print_info "Arrêt des conteneurs..."
-    docker-compose -f $COMPOSE_FILE down
+    docker compose -f $COMPOSE_FILE down
     print_success "Conteneurs arrêtés"
 }
 
 cmd_restart() {
     print_info "Redémarrage des conteneurs..."
-    docker-compose -f $COMPOSE_FILE restart
+    docker compose -f $COMPOSE_FILE restart
     print_success "Conteneurs redémarrés"
 }
 
 cmd_logs() {
     SERVICE=${2:-backend}
     print_info "Affichage des logs de $SERVICE (Ctrl+C pour quitter)..."
-    docker-compose -f $COMPOSE_FILE logs -f $SERVICE
+    docker compose -f $COMPOSE_FILE logs -f $SERVICE
 }
 
 cmd_migrate() {
     check_env
     print_info "Exécution des migrations..."
-    docker-compose -f $COMPOSE_FILE exec backend php bin/console doctrine:migrations:migrate --no-interaction
+    docker compose -f $COMPOSE_FILE exec backend php bin/console doctrine:migrations:migrate --no-interaction
     print_success "Migrations appliquées"
 }
 
@@ -136,7 +136,7 @@ cmd_backup() {
     BACKUP_FILE="backup_$(date +%Y%m%d_%H%M%S).sql"
     print_info "Création d'une sauvegarde de la base de données..."
 
-    docker-compose -f $COMPOSE_FILE exec -T mysql mysqldump \
+    docker compose -f $COMPOSE_FILE exec -T mysql mysqldump \
         -u root -p${MYSQL_ROOT_PASSWORD:-root_password_change_me} ia_challenge > "$BACKUP_FILE"
 
     print_success "Sauvegarde créée: $BACKUP_FILE"
@@ -155,17 +155,17 @@ cmd_update() {
 
     # Rebuild containers
     print_info "Reconstruction des images..."
-    docker-compose -f $COMPOSE_FILE up -d --build
+    docker compose -f $COMPOSE_FILE up -d --build
     print_success "Images reconstruites"
 
     # Run migrations
     print_info "Application des migrations..."
-    docker-compose -f $COMPOSE_FILE exec -T backend php bin/console doctrine:migrations:migrate --no-interaction
+    docker compose -f $COMPOSE_FILE exec -T backend php bin/console doctrine:migrations:migrate --no-interaction
     print_success "Migrations appliquées"
 
     # Clear cache
     print_info "Nettoyage du cache..."
-    docker-compose -f $COMPOSE_FILE exec -T backend php bin/console cache:clear
+    docker compose -f $COMPOSE_FILE exec -T backend php bin/console cache:clear
     print_success "Cache nettoyé"
 
     print_success "Mise à jour terminée!"
@@ -173,13 +173,13 @@ cmd_update() {
 
 cmd_status() {
     print_info "Statut des conteneurs:"
-    docker-compose -f $COMPOSE_FILE ps
+    docker compose -f $COMPOSE_FILE ps
 }
 
 cmd_shell() {
     SERVICE=${2:-backend}
     print_info "Accès au shell de $SERVICE..."
-    docker-compose -f $COMPOSE_FILE exec $SERVICE sh
+    docker compose -f $COMPOSE_FILE exec $SERVICE sh
 }
 
 cmd_help() {
