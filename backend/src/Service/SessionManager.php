@@ -67,10 +67,11 @@ class SessionManager
      */
     public function getActiveQuizSession(): ?GameSession
     {
-        if (null === $this->getActiveSession(GameSession::TYPE_CLASSIC_QUIZ)) {
+        $sessionActive = $this->getActiveSession(GameSession::TYPE_CLASSIC_QUIZ);
+        if (null === $sessionActive) {
             return $this->getActiveSession('anecdote_quiz');
         }
 
-        return null;
+        return $sessionActive;
     }
 }
