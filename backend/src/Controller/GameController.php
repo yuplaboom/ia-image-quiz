@@ -149,11 +149,18 @@ class GameController extends AbstractController
             ]);
         }
 
+        // Get current team scores
+        $statistics = $this->gameService->getGameStatistics($gameSession);
+
         return $this->json([
             'status' => $gameSession->getStatus(),
             'currentRoundIndex' => $gameSession->getCurrentRoundIndex(),
             'totalRounds' => $gameSession->getRounds()->count(),
             'currentRound' => $this->serializeRound($currentRound),
+            'gameSession' => [
+                'timePerImageSeconds' => $gameSession->getTimePerImageSeconds(),
+            ],
+            'teamScores' => $statistics['teamStats'],
         ]);
     }
 
