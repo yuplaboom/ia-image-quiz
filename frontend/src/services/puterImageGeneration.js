@@ -62,7 +62,9 @@ function buildPrompt(participant) {
   const { name, physicalTraits, flaw, quality, jobTitle } = participant;
   const traitsText = Array.isArray(physicalTraits) ? physicalTraits.join(', ') : '';
 
-  return `Dans une ambiance de repas de Noël, j'aimerai en premier plan une personne qui se prénomme ${name} (mais ne pas afficher le prénom), avec les traits physiques : ${traitsText}, qui est en tenu et objets environnants de quelqu'un travaille comme ${jobTitle}. qui a comme défaut ${flaw} mais en qualité ${quality}.`;
+  return `
+  Ambiance de repas de Noël, au premier plan une personne (style réel) prénommée ${name} (mais sans afficher le prénom), 
+avec les traits physiques suivants : ${traitsText}. Elle est habillée et entourée d’objets correspondant au travail d’une ${jobTitle}. Elle a l’air un peu ${flaw}, mais est urtout très ${quality} et bienveillante.`;
 }
 
 /**

@@ -8,7 +8,9 @@ function PlayerActiveRound({
   error,
   success,
   onSubmitAIAnswer,
-  onSubmitQuizAnswer
+  onSubmitAIAnswerByName,
+  onSubmitQuizAnswer,
+  participants
 }) {
   if (!currentRoundData?.currentRound) {
     return (
@@ -106,34 +108,33 @@ function PlayerActiveRound({
 
             {!hasSubmitted ? (
               <>
-                {/* AI Image Generation - Text Input */}
+                {/* AI Image Generation - Participant Selection */}
                 {isAIGame && (
-                  <form onSubmit={onSubmitAIAnswer} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Qui est cette personne ?
-                      </label>
-                      <input
-                        type="text"
-                        value={guess}
-                        onChange={(e) => setGuess(e.target.value)}
-                        placeholder="Entrez le nom"
-                        required
-                        autoFocus
-                        className="w-full px-4 py-3 rounded-xl bg-white border border-wine-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-wine-500/30 focus:border-wine-500 transition-all duration-200"
-                      />
+                  <div className="space-y-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Qui est cette personne ?
+                    </label>
+                    <div className="space-y-3">
+                      {participants && participants.length > 0 ? (
+                        participants.map((participant, index) => (
+                          <button
+                            key={participant.id}
+                            onClick={() => onSubmitAIAnswerByName(participant.name)}
+                            className="w-full py-4 px-5 bg-white hover:bg-wine-50 border border-wine-200 hover:border-wine-300 text-gray-900 rounded-xl font-medium text-left transition-all duration-200 flex items-center gap-3 group shadow-sm"
+                          >
+                            <span className="w-8 h-8 flex items-center justify-center bg-wine-100 group-hover:bg-wine-200 text-wine-700 rounded-lg font-bold text-sm">
+                              {String.fromCharCode(65 + index)}
+                            </span>
+                            <span>{participant.name}</span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-600 text-center">
+                          Aucun participant disponible
+                        </div>
+                      )}
                     </div>
-
-                    <button
-                      type="submit"
-                      className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold text-lg shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                      </svg>
-                      Envoyer ma Reponse
-                    </button>
-                  </form>
+                  </div>
                 )}
 
                 {/* Classic Quiz - Multiple Choice */}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, createPlayer, createParticipant, getTeams, createTeam } from '../services/api';
+import { getPlayer, createPlayer, createParticipant, getParticipants, getTeams, createTeam } from '../services/api';
 import { createGameAPI } from '../services/gameApiAdapter';
 import { subscribeToGameSession, subscribeToGlobalSessions } from '../services/mercure';
 import { getPlayerData, savePlayerData, hasPlayerData, clearPlayerData } from '../services/playerStorage';
@@ -19,6 +19,7 @@ function GamePlayer() {
   const [playerName, setPlayerName] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('');
   const [teams, setTeams] = useState([]);
+  const [participants, setParticipants] = useState([]);
   const [guess, setGuess] = useState('');
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,7 @@ function GamePlayer() {
   useEffect(() => {
     loadGameData();
     loadTeams();
+    loadParticipants();
 
     // Subscribe to Mercure notifications for real-time updates
     const eventSource = subscribeToGameSession(sessionId, {
@@ -157,6 +159,16 @@ function GamePlayer() {
     }
   };
 
+  const loadParticipants = async () => {
+    try {
+      const response = await getParticipants();
+      const participantsList = response.data.member || response.data['hydra:member'] || [];
+      setParticipants(participantsList);
+    } catch (err) {
+      console.error('Error loading participants:', err);
+    }
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!playerName.trim()) return;
@@ -199,6 +211,8 @@ function GamePlayer() {
           phraseAnecdote: participantData.phraseAnecdote.trim()
         });
         console.log('Participant created:', participantResponse.data);
+        // Reload participants list to include the new participant
+        await loadParticipants();
       } catch (err) {
         console.error('Error creating participant:', err);
         setError('Erreur lors de la création du participant');
@@ -310,6 +324,29 @@ function GamePlayer() {
     }
   };
 
+  // Helper function for submitting AI answers by participant selection
+  const handleSubmitAIAnswerByName = async (participantName) => {
+    if (!currentRoundData?.currentRound || !player?.id || !gameAPI) return;
+    try {
+      // Calculate response time in milliseconds
+      const responseTimeMs = roundStartTime ? Date.now() - roundStartTime : null;
+
+      await gameAPI.submitAnswer(
+        currentRoundData.currentRound.id,
+        player.id,
+        participantName,
+        responseTimeMs
+      );
+      setGuess(participantName);
+      setHasSubmitted(true);
+      setSuccess('Réponse enregistrée!');
+      setError('');
+    } catch (err) {
+      setError('Erreur lors de l\'envoi de la réponse');
+      console.error(err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-sand flex items-center justify-center">
@@ -374,7 +411,9 @@ function GamePlayer() {
           error={error}
           success={success}
           onSubmitAIAnswer={handleSubmit}
+          onSubmitAIAnswerByName={handleSubmitAIAnswerByName}
           onSubmitQuizAnswer={handleSubmitQuizAnswer}
+          participants={participants}
         />
       )}
     </div>
