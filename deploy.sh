@@ -171,6 +171,21 @@ cmd_update() {
     print_success "Mise à jour terminée!"
 }
 
+cmd_rebuild_frontend() {
+    check_env
+    print_info "Reconstruction complète du frontend..."
+
+    # Force rebuild without cache
+    docker compose -f $COMPOSE_FILE build --no-cache frontend
+    print_success "Image frontend reconstruite"
+
+    # Recreate container
+    docker compose -f $COMPOSE_FILE up -d --force-recreate frontend
+    print_success "Container frontend redémarré"
+
+    print_success "Rebuild du frontend terminé!"
+}
+
 cmd_status() {
     print_info "Statut des conteneurs:"
     docker compose -f $COMPOSE_FILE ps
