@@ -215,7 +215,62 @@ class GameController extends AbstractController
             ];
         }
 
+        // Calculate team rankings up to this round (cumulative)
+        $response['teamRankings'] = $this->calculateTeamRankings($round);
+
         return $this->json($response);
+    }
+
+    /**
+     * Calculate cumulative team rankings up to the given round
+     */
+    private function calculateTeamRankings(GameRound $currentRound): array
+    {
+        $gameSession = $currentRound->getGameSession();
+        $teamScores = [];
+
+        // Calculate cumulative scores up to and including the current round
+        foreach ($gameSession->getRounds() as $round) {
+            // Only include rounds up to and including the current one
+            if ($round->getRoundOrder() > $currentRound->getRoundOrder()) {
+                continue;
+            }
+
+            foreach ($round->getAnswers() as $answer) {
+                $player = $answer->getPlayer();
+                $team = $player->getTeam();
+                $teamName = $team ? $team->getName() : 'Aucune équipe';
+
+                if (!isset($teamScores[$teamName])) {
+                    $teamScores[$teamName] = [
+                        'teamName' => $teamName,
+                        'totalPoints' => 0,
+                        'correctAnswers' => 0,
+                        'totalAnswers' => 0,
+                        'players' => [],
+                    ];
+                }
+
+                $teamScores[$teamName]['totalPoints'] += $answer->getPointsEarned();
+                $teamScores[$teamName]['totalAnswers']++;
+
+                if ($answer->isCorrect()) {
+                    $teamScores[$teamName]['correctAnswers']++;
+                }
+
+                // Track unique players
+                if (!in_array($player->getName(), $teamScores[$teamName]['players'])) {
+                    $teamScores[$teamName]['players'][] = $player->getName();
+                }
+            }
+        }
+
+        // Sort teams by total points (descending)
+        usort($teamScores, function($a, $b) {
+            return $b['totalPoints'] <=> $a['totalPoints'];
+        });
+
+        return array_values($teamScores);
     }
 
     private function serializeRound(?GameRound $round): ?array
