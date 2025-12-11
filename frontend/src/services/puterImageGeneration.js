@@ -62,9 +62,7 @@ function buildPrompt(participant) {
   const { name, physicalTraits, flaw, quality, jobTitle } = participant;
   const traitsText = Array.isArray(physicalTraits) ? physicalTraits.join(', ') : '';
 
-  return `
-  Ambiance de repas de Noël, au premier plan une personne (style réel) prénommée ${name} (mais sans afficher le prénom), 
-avec les traits physiques suivants : ${traitsText}. Elle est habillée et entourée d’objets correspondant au travail d’une ${jobTitle}. Elle a l’air un peu ${flaw}, mais est urtout très ${quality} et bienveillante.`;
+  return `Photo d'une personne prénommée ${name} (mais sans afficher le prénom), avec les traits physiques suivants : ${traitsText}. Elle est habillée et entourée d’objets correspondant au travail d’une ${jobTitle}. Elle a l’air un peu ${flaw}, mais est surtout très ${quality} et bienveillante.`;
 }
 
 /**
