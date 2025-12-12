@@ -184,4 +184,8 @@ export const storeParticipantImage = (participantId, imageDataUrl) =>
 export const batchStoreImages = (images) =>
   api.post('/images/batch-store', { images });
 
+// App Settings
+export const getAppSettings = () => api.get('/app_settings/1');
+export const updateAppSettings = (data) => api.put('/app_settings/1', data);
+
 export default api;

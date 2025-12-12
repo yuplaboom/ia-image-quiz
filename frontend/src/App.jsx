@@ -3,6 +3,7 @@ import ParticipantManager from './components/admin/managers/ParticipantManager';
 import QuestionManager from './components/admin/managers/QuestionManager';
 import PlayerManager from './components/admin/managers/PlayerManager';
 import TeamManager from './components/admin/managers/TeamManager';
+import SettingsManager from './components/admin/managers/SettingsManager';
 import GameSetup from './components/admin/GameSetup';
 import GameHost from './components/admin/GameHost';
 import GamePlayer from './components/GamePlayer';
@@ -94,6 +95,18 @@ function Navigation() {
             </li>
             <li>
               <Link
+                to="/admin/settings"
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  location.pathname === '/admin/settings'
+                    ? 'bg-wine-100 text-wine-700'
+                    : 'text-gray-600 hover:bg-cream-100 hover:text-wine-600'
+                }`}
+              >
+                Paramètres
+              </Link>
+            </li>
+            <li>
+              <Link
                 to="/admin/sessions/new"
                 className="ml-2 px-4 py-2 bg-gradient-to-r from-wine-600 to-wine-700 text-white rounded-lg text-sm font-semibold shadow-md hover:shadow-lg hover:from-wine-700 hover:to-wine-800 transition-all duration-200"
               >
@@ -135,6 +148,7 @@ function AppContent() {
           <Route path="/admin/questions" element={<QuestionManager />} />
           <Route path="/admin/players" element={<PlayerManager />} />
           <Route path="/admin/teams" element={<TeamManager />} />
+          <Route path="/admin/settings" element={<SettingsManager />} />
           <Route path="/admin/sessions/new" element={<GameSetup />} />
           <Route path="/admin/host/:sessionId" element={<GameHost />} />
         </Routes>
