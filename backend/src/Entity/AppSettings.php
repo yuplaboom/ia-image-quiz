@@ -11,14 +11,6 @@ use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AppSettingsRepository::class)]
-#[ApiResource(
-    operations: [
-        new Get(),
-        new Put()
-    ],
-    normalizationContext: ['groups' => ['app_settings:read']],
-    denormalizationContext: ['groups' => ['app_settings:write']]
-)]
 class AppSettings
 {
     #[ORM\Id]

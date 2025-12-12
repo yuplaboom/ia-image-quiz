@@ -5,7 +5,13 @@
       "Bash(docker-compose logs:*)",
       "Bash(docker-compose build:*)",
       "Bash(docker-compose up:*)",
-      "Bash(docker-compose exec:*)"
+      "Bash(docker-compose exec:*)",
+      "Bash(sshpass -p 5LegS7G7njN3dHjM ssh -o StrictHostKeyChecking=no debian@51.254.143.159 \"sudo ss -tlnp | grep :80\")",
+      "Bash(sshpass -p 5LegS7G7njN3dHjM ssh -o StrictHostKeyChecking=no debian@51.254.143.159 \"cd ~/www/ia-image-quiz && docker-compose up -d\")",
+      "Bash(sshpass:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd image preview button for participants with generated images\n\n- Add \"Image\" button in participant dashboard for viewing generated images\n- Button only appears when participant.generatedImageUrl exists\n- Implement modal popup to display image in full size\n- Modal includes close button and click-outside-to-close functionality\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
